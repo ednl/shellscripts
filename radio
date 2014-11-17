@@ -10,7 +10,7 @@
 # Version    : 1.0.0
 # Date       : 2014-11-17
 # Purpose    : Execute local radio command on remote host
-               Check if host is up using dig, if available
+#              Check if host is up using dig, if available
 # Parameters : any parameter for remote radio command
 # Exit     0 : success
 #          1 : ssh not found
