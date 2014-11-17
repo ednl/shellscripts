@@ -1,0 +1,41 @@
+#!/bin/bash
+
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Mac OS X
+# Requires   : Bash, ssh, dig, ssh-key access to remote
+# Location   : ~/bin/
+# Name       : radio
+# Version    : 1.0.0
+# Date       : 2014-11-17
+# Purpose    : Transfer local radio command to remote Raspberry Pi
+# Parameters : any parameter for remote radio command
+# Exit     0 : success
+#          1 : ssh not found
+#          2 : dig not found
+#######################################################################
+
+REMOTEHOST=blue
+REMOTEUSER=pi
+REMOTEPORT=22000
+
+SSHBIN=/usr/bin/ssh
+if [ ! -x $SSHBIN ]; then
+	echo "Can't execute $SSHBIN" >&2
+	exit 1
+fi
+
+DIGBIN=/usr/bin/dig
+if [ -x $DIGBIN ]; then
+	DNSSERVER=192.168.178.1
+	DNSSUFFIX=.fritz.box
+	REMOTEADDR=$($DIGBIN @$DNSSERVER $REMOTEHOST$DNSSUFFIX A +short)
+	if [ -z "$REMOTEADDR" ]; then
+		echo "Host $REMOTEHOST unreachable." >&2
+		exit 2
+	fi
+fi
+
+$SSHBIN -x -p $REMOTEPORT $REMOTEUSER@$REMOTEHOST radio "$*"
+exit 0
