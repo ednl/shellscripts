@@ -5,21 +5,23 @@
 # Licence    : GNU GPL v3
 # Platform   : Mac OS X
 # Requires   : Bash, ssh, ssh-key access to remote
+#              on remote: piradio script, mpd, mpc
 # Location   : ~/bin/
 # Name       : radio
-# Version    : 1.0.0
-# Date       : 2014-11-17
+# Version    : 1.0.1
+# Date       : 2014-12-02
 # Purpose    : Execute local radio command on remote host
 #              Check if host is up using dig, if available
-# Parameters : any parameter for remote radio command
+# Parameters : any parameter for remote piradio command
 # Exit     0 : success
 #          1 : ssh not found
 #          2 : host down
 #######################################################################
 
-REMOTEHOST=blue
-REMOTEUSER=pi
-REMOTEPORT=22000
+
+REMOTEHOST=${MPD_HOST:-"wood"}      # use MPD_HOST if set, or default
+REMOTEUSER=pi                       # ssh user name on remote
+REMOTEPORT=22000                    # ssh port on remote
 
 SSHBIN=/usr/bin/ssh
 if [ ! -x $SSHBIN ]; then
@@ -29,8 +31,8 @@ fi
 
 DIGBIN=/usr/bin/dig
 if [ -x $DIGBIN ]; then
-	DNSSERVER=192.168.178.1
-	DNSSUFFIX=.fritz.box
+	DNSSERVER=192.168.178.1     # DNS service of DSL modem
+	DNSSUFFIX=.fritz.box        # LAN suffix used by DSL modem
 	REMOTEADDR=$($DIGBIN @$DNSSERVER $REMOTEHOST$DNSSUFFIX A +short)
 	if [ -z "$REMOTEADDR" ]; then
 		echo "Host $REMOTEHOST unreachable." >&2
@@ -38,5 +40,5 @@ if [ -x $DIGBIN ]; then
 	fi
 fi
 
-$SSHBIN -x -p $REMOTEPORT $REMOTEUSER@$REMOTEHOST radio "$*"
+$SSHBIN -x -p $REMOTEPORT $REMOTEUSER@$REMOTEHOST piradio "$*"
 exit 0
