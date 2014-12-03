@@ -23,7 +23,7 @@ frclass	http://mp3lg.tdf-cdn.com/francemusique/all/francemusiquehautdebit.mp3
 ancient	http://5.152.208.98:8058/
 arrow	http://91.221.151.155:80/
 veron	http://8633.live.streamtheworld.com:80/VERONICAAAC_SC
-192	http://www.stream-server.nl/streams/192Radio.pls
+192	http://server-14.stream-server.nl:8030/
 class	http://8503.live.streamtheworld.com:80/CLASSICFMAAC_SC
 10gold	http://82.201.100.23/Radio10Gold
 bnr	http://81.173.3.251/
