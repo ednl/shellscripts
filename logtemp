@@ -1,0 +1,41 @@
+#!/bin/bash
+
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Raspberry Pi
+# Requires   : Raspbian, Bash
+# Location   : ~/bin/
+# Name       : logtemp
+# Version    : 1.0.0
+# Date       : 2015-11-02
+# Purpose    : Log CPU temperature as long there is disk space
+# Parameters : none
+# Exit     0 : out of disk space
+#######################################################################
+
+LOGDIR=/home/pi  # Where to save logging files
+INTERVAL=10      # Logging interval in seconds
+DISKLIMIT=512    # Free space in MB that must be available for logging to continue
+
+space () {
+	MB=$(df -BM --total "$LOGDIR" | grep total | xargs | cut -d" " -f2 | cut -dM -f1)
+	[ $MB -ge $DISKLIMIT ] && return 0
+	return 1
+}
+
+while space; do
+	DATE=$(date +"%Y%m%d")
+	TIME=$(date +"%H:%M:%S")
+
+	# Requires bc (install from repository: sudo apt-get install bc)
+	#MILLI=$(cat '/sys/class/thermal/thermal_zone0/temp')
+	#TEMP=$(echo "scale=3;$MILLI/1000" | bc)
+
+	# Requires vcgencmd (available on standard Raspbian)
+	TEMP=$(vcgencmd measure_temp | cut -d= -f2 | cut -d\' -f1)
+
+	echo "\"$TIME\",$TEMP" >> $LOGDIR/temp-$DATE.csv
+	sleep $INTERVAL
+done
+exit 0
