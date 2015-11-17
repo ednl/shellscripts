@@ -1,5 +1,23 @@
 #!/bin/bash
 
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Mac OS X
+# Requires   : Bash, xattr
+# Location   : ~/bin/
+# Name       : fittime
+# Version    : 1.0.0
+# Date       : 2015-11-17
+# Purpose    : Align timestamps with file names for Garmin .fit files.
+#              Also remove DOS 'execute' and OS X extended attributes.
+# Parameters : none
+# Settings   : FITDIR = location of Garmin Activity .fit files
+# Exit     0 : No errors (but chmod/xattr/touch errors not monitored)
+#          1 : FITDIR not found or not a directory
+#          2 : No .fit files in FITDIR directory
+#######################################################################
+
 FITDIR=~/Documents/Garmin\ Activities
 
 if [ ! -d "$FITDIR" ]; then
