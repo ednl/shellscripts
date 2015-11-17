@@ -1,0 +1,29 @@
+#!/bin/bash
+
+FITDIR=~/Documents/Garmin\ Activities
+
+if [ ! -d "$FITDIR" ]; then
+	echo "FIT-file directory not found: $FITDIR" 1>&2
+	exit 1
+fi
+
+n=$(ls "$FITDIR"/*.fit | grep -E '\.fit$' | wc -l | grep -oE '\d+')
+if (( n >= 1 )); then
+	echo "FIT-files found: $n"
+else
+	echo "No FIT-files found in directory: $FITDIR" 1>&2
+	exit 2
+fi
+
+m=0
+for f in "$FITDIR"/*.fit; do
+	t=${f:(-23)}
+	t=${t//-/}
+	t=${t:0:12}.${t:12:2}
+	chmod 600 "$f"
+	xattr -c "$f"
+	touch -t $t "$f" && (( m++ ))
+done
+
+echo "FIT-files touched: $m"
+exit 0
