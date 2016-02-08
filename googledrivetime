@@ -8,7 +8,7 @@
 # Location   : ~/bin/
 # Name       : googledrivetime
 # Version    : 1.0.0
-# Date       : 2015-11-17
+# Date       : 2016-02-08
 # Purpose    : Align timestamps with file names for Motorola .jpg files
 #            : synced via Google Drive.
 #              Also remove DOS 'execute' and OS X extended attributes.
