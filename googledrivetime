@@ -6,16 +6,17 @@
 # Platform   : Mac OS X
 # Requires   : Bash, xattr
 # Location   : ~/bin/
-# Name       : fittime
+# Name       : googledrivetime
 # Version    : 1.0.0
 # Date       : 2015-11-17
-# Purpose    : Align timestamps with file names for Garmin .fit files.
+# Purpose    : Align timestamps with file names for Motorola .jpg files
+#            : synced via Google Drive.
 #              Also remove DOS 'execute' and OS X extended attributes.
 # Parameters : none
-# Settings   : FITDIR = location of Garmin Activity .fit files
+# Settings   : IMGDIR = location of latest Google Photos
 # Exit     0 : No errors (but chmod/xattr/touch errors not monitored)
-#          1 : FITDIR not found or not a directory
-#          2 : No .fit files in FITDIR directory
+#          1 : IMGDIR not found or not a directory
+#          2 : No .jpg files in IMGDIR directory
 #######################################################################
 
 # Only check the latest directory (organised by month), from current date
