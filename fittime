@@ -7,7 +7,7 @@
 # Requires   : bash
 # Location   : ~/bin/
 # Name       : fittime
-# Version    : 2.0.3
+# Version    : 2.0.5
 # Date       : 2016-07-21
 # Purpose    : Align timestamp with file name for Garmin .fit files.
 #              Also remove DOS 'execute' and OS X extended attributes.
@@ -21,7 +21,7 @@
 FITDIR=~/Documents/Garmin/Activities
 
 if [ -d "$FITDIR" ]; then
-	echo "Using FIT-file directory: $FITDIR"
+	echo "Using directory : $FITDIR"
 else
 	echo "FIT-file directory not found: $FITDIR" 1>&2
 	exit 1
@@ -36,7 +36,7 @@ find "$FITDIR"/*.fit -perm +177 | xargs chmod 600
 # Exit early if no files found
 tot=$(ls "$FITDIR"/*.fit | grep -E '\.fit$' | wc -l | grep -oE '\d+')
 if (( tot >= 1 )); then
-	echo "FIT-files found     : $tot"
+	echo "FIT-files found : $tot"
 else
 	echo "No FIT-files found." 1>&2
 	exit 2
@@ -63,6 +63,6 @@ for f in "$FITDIR"/*.fit; do
 	fi
 done
 
-echo "FIT-files wrong time: $err"
-echo "FIT-files corrected : $adj"
+echo "Wrong file time : $err"
+echo "Time adjusted   : $adj"
 exit 0
