@@ -7,7 +7,7 @@
 # Requires   : bash
 # Location   : ~/bin/
 # Name       : fittime
-# Version    : 2.0.2
+# Version    : 2.0.3
 # Date       : 2016-07-21
 # Purpose    : Align timestamp with file name for Garmin .fit files.
 #              Also remove DOS 'execute' and OS X extended attributes.
@@ -33,21 +33,22 @@ xattr "$FITDIR"/*.fit | cut -d':' -f1 | sort | uniq | xargs xattr -c
 # Change file mode to RW only for owner
 find "$FITDIR"/*.fit -perm +177 | xargs chmod 600
 
-n=$(ls "$FITDIR"/*.fit | grep -E '\.fit$' | wc -l | grep -oE '\d+')
-if (( n >= 1 )); then
-	echo "FIT-files found     : $n"
+# Exit early if no files found
+tot=$(ls "$FITDIR"/*.fit | grep -E '\.fit$' | wc -l | grep -oE '\d+')
+if (( tot >= 1 )); then
+	echo "FIT-files found     : $tot"
 else
 	echo "No FIT-files found." 1>&2
 	exit 2
 fi
 
 # Set file modification time according to file name
-n=0
-m=0
+err=0
+adj=0
 for f in "$FITDIR"/*.fit; do
 
 	# File modification time in touch format
-	mod=$(stat -f '%Sm' -t '%Y%m%d%H%M.%S' "$f")
+	m=$(stat -f '%Sm' -t '%Y%m%d%H%M.%S' "$f")
 
 	# Faster than "basename $f"
 	t=${f:(-23)}
@@ -56,12 +57,12 @@ for f in "$FITDIR"/*.fit; do
 	# Format as YYYYMMDDhhmm.SS for touch
 	t=${t:0:12}.${t:12:2}
 
-	if [[ "$mod" != "$t" ]]; then
-		(( n++ ))
-		touch -cfm -t $t "$f" && (( m++ ))
+	if [[ "$m" != "$t" ]]; then
+		(( err++ ))
+		touch -cfm -t $t "$f" && (( adj++ ))
 	fi
 done
 
-echo "FIT-files wrong time: $n"
-echo "FIT-files corrected : $m"
+echo "FIT-files wrong time: $err"
+echo "FIT-files corrected : $adj"
 exit 0
