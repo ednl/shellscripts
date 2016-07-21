@@ -7,7 +7,7 @@
 # Requires   : bash
 # Location   : ~/bin/
 # Name       : fittime
-# Version    : 2.0.5
+# Version    : 2.0.6
 # Date       : 2016-07-21
 # Purpose    : Align timestamp with file name for Garmin .fit files.
 #              Also remove DOS 'execute' and OS X extended attributes.
@@ -18,20 +18,16 @@
 #          2 : No .fit files in FITDIR directory
 #######################################################################
 
+# Use backslashes to escape spaces, if any, in the directory name
 FITDIR=~/Documents/Garmin/Activities
 
+# Directory exists?
 if [ -d "$FITDIR" ]; then
 	echo "Using directory : $FITDIR"
 else
 	echo "FIT-file directory not found: $FITDIR" 1>&2
 	exit 1
 fi
-
-# Remove macOS extended attributes
-xattr "$FITDIR"/*.fit | cut -d':' -f1 | sort | uniq | xargs xattr -c
-
-# Change file mode to RW only for owner
-find "$FITDIR"/*.fit -perm +177 | xargs chmod 600
 
 # Exit early if no files found
 tot=$(ls "$FITDIR"/*.fit | grep -E '\.fit$' | wc -l | grep -oE '\d+')
@@ -41,6 +37,12 @@ else
 	echo "No FIT-files found." 1>&2
 	exit 2
 fi
+
+# Remove macOS extended attributes
+xattr "$FITDIR"/*.fit | cut -d':' -f1 | sort | uniq | xargs xattr -c
+
+# Change file mode to RW only for owner
+find "$FITDIR"/*.fit -perm +177 | xargs chmod 600
 
 # Set file modification time according to file name
 err=0
