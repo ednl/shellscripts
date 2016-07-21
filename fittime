@@ -4,12 +4,12 @@
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
 # Platform   : Mac OS X
-# Requires   : Bash, xattr
+# Requires   : bash
 # Location   : ~/bin/
 # Name       : fittime
-# Version    : 1.0.0
-# Date       : 2015-11-17
-# Purpose    : Align timestamps with file names for Garmin .fit files.
+# Version    : 2.0.0
+# Date       : 2016-07-21
+# Purpose    : Align timestamp with file name for Garmin .fit files.
 #              Also remove DOS 'execute' and OS X extended attributes.
 # Parameters : none
 # Settings   : FITDIR = location of Garmin Activity .fit files
@@ -18,12 +18,20 @@
 #          2 : No .fit files in FITDIR directory
 #######################################################################
 
-FITDIR=~/Documents/Garmin\ Activities
+FITDIR=~/Documents/Garmin/Activities
 
-if [ ! -d "$FITDIR" ]; then
+if [ -d "$FITDIR" ]; then
+	echo "FIT-file directory: $FITDIR"
+else
 	echo "FIT-file directory not found: $FITDIR" 1>&2
 	exit 1
 fi
+
+# Remove macOS extended attributes
+xattr "$FITDIR"/*.fit | cut -d':' -f1 | sort | uniq | xargs xattr -c
+
+# Change file mode to RW only for owner
+find "$FITDIR"/*.fit -perm +177 | xargs chmod 600
 
 n=$(ls "$FITDIR"/*.fit | grep -E '\.fit$' | wc -l | grep -oE '\d+')
 if (( n >= 1 )); then
@@ -33,15 +41,24 @@ else
 	exit 2
 fi
 
-m=0
-for f in "$FITDIR"/*.fit; do
-	t=${f:(-23)}
-	t=${t//-/}
-	t=${t:0:12}.${t:12:2}
-	chmod 600 "$f"
-	xattr -c "$f"
-	touch -t $t "$f" && (( m++ ))
+# Set file modification time according to file name
+n=0
+for file in "$FITDIR"/*.fit; do
+
+	# File modification time in touch format
+	fmod=$(stat -f '%Sm' -t '%Y%m%d%H%M.%S' "$file")
+
+	# Faster than "basename $file"
+	base=${file:(-23)}
+	# Remove dashes
+	nums=${base//-/}
+	# Format as YYYYMMDDHHMM.SS
+	time=${nums:0:12}.${nums:12:2}
+
+	if [[ "$fmod" != "$time" ]]; then
+		touch -cfm -t $time "$file" && (( n++ ))
+	fi
 done
 
-echo "FIT-files touched: $m"
+echo "FIT-files touched: $n"
 exit 0
