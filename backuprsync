@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Name and mount point of backup disk
+DEST=/Volumes/MacOSX2
+if [ ! -d "$DEST" ]; then
+	echo "Backup disk not found at $DEST" 1>&2
+	exit 1
+fi
+
+# Copy application directory to backup disk
+echo
+echo "   Applications:"
+echo
+sudo rsync -a --info=progress2,stats3 /Applications "$DEST"
+
+# Copy contents of user directory to backup disk
+echo
+echo "   User:"
+echo
+sudo rsync -a --info=progress2,stats3 "$HOME"/ "$DEST"
