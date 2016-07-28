@@ -7,8 +7,8 @@
 # Requires   : bash
 # Location   : ~/bin/
 # Name       : fittime
-# Version    : 2.0.6
-# Date       : 2016-07-21
+# Version    : 2.1.0
+# Date       : 2016-07-28
 # Purpose    : Align timestamp with file name for Garmin .fit files.
 #              Also remove DOS 'execute' and OS X extended attributes.
 # Parameters : none
@@ -30,7 +30,7 @@ else
 fi
 
 # Exit early if no files found
-tot=$(ls "$FITDIR"/*.fit | grep -E '\.fit$' | wc -l | grep -oE '\d+')
+tot=$(ls "$FITDIR"/*.fit | wc -l | grep -oE '\d+')
 if (( tot >= 1 )); then
 	echo "FIT-files found : $tot"
 else
@@ -39,10 +39,10 @@ else
 fi
 
 # Remove macOS extended attributes
-xattr "$FITDIR"/*.fit | cut -d':' -f1 | sort | uniq | xargs xattr -c
+xattr "$FITDIR"/*.fit | cut -d':' -f1 | sort | uniq | tr \\n \\0 | xargs -0 xattr -c
 
 # Change file mode to RW only for owner
-find "$FITDIR"/*.fit -perm +177 | xargs chmod 600
+find "$FITDIR" -depth 1 -name *.fit -perm +177 -print0 | xargs -0 chmod 600
 
 # Set file modification time according to file name
 err=0
@@ -61,7 +61,7 @@ for f in "$FITDIR"/*.fit; do
 
 	if [[ "$m" != "$t" ]]; then
 		(( err++ ))
-		touch -cfm -t $t "$f" && (( adj++ ))
+		touch -cfm -t "$t" "$f" && (( adj++ ))
 	fi
 done
 
