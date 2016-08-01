@@ -77,7 +77,7 @@ fi
 # Make video
 VID="$VIDEODIR/webcam-$REF.mp4"
 avconv -y \
-	-r 4 -i "/tmp/img-%04d.jpg" \
+	-r 4 -i "$LDIR/$LFMT" \
 	-an -r 4 -c:v libx264 "$VID" \
 	&>/dev/null
 chown pi:pi "$VID"
