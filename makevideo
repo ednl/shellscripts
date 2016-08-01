@@ -9,8 +9,7 @@
 # Name       : makevideo
 # Version    : 1.0.0
 # Date       : 2016-08-01
-# Purpose    : Align timestamp with file name for Garmin .fit files.
-#              Also remove DOS 'execute' and OS X extended attributes.
+# Purpose    : Create video from remote dir full of webcam jpegs.
 # Parameters : none
 # Settings   : SERVER = remote server holding the webcam jpegs,
 #                       capable of ssh / scp / rsync
