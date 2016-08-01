@@ -1,5 +1,25 @@
 #!/bin/bash
 
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Raspberry Pi
+# Requires   : bash, ssh access, avconv
+# Location   : /usr/local/bin/
+# Name       : makevideo
+# Version    : 1.0.0
+# Date       : 2016-08-01
+# Purpose    : Align timestamp with file name for Garmin .fit files.
+#              Also remove DOS 'execute' and OS X extended attributes.
+# Parameters : none
+# Settings   : SERVER = remote server holding the webcam jpegs,
+#                       capable of ssh / scp / rsync
+#              RDIR = remote directory containing the jpegs,
+#                     also where the video will be uploaded
+# Exit     0 : No errors (but rsync/ssh/touch/etc errors not monitored)
+#          1 : No jpegs found
+#######################################################################
+
 # Server
 SERVER="user@server"
 IDFILE="/home/pi/.ssh/id_rsa"
