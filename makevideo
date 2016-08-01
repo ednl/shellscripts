@@ -1,0 +1,73 @@
+#!/bin/bash
+
+# Server
+SERVER="user@server"
+IDFILE="/home/pi/.ssh/id_rsa"
+
+# Remote and local directories
+RDIR="remote-dir"
+LDIR="/tmp"
+VIDEODIR="/home/pi/Videos"
+
+# Remote and local file name patterns, format
+RPAT="[012][0-9][0-5][0-9].jpg"
+LPAT="img-[0-9][0-9][0-9][0-9].jpg"
+LFMT="img-%04d.jpg"
+
+# Download webcam shots
+rsync -qau -e "ssh -i '$IDFILE'" \
+	"$SERVER":"$RDIR/$RPAT" \
+	"$LDIR/"
+
+# Avoid using old files for making the video
+# (not all remote 'HHMM.jpg' files may heve been updated in case of upload problems)
+# Assume webcam runs between 8:00 and 22:00
+NOW=$(date +%-H%M)
+if (( NOW >= 800 )); then
+	# Webcam running or today completed, use files from today
+	REF=$(date +%Y%m%d)
+else
+	# Use files from yesterday
+	REF=$(date -d yesterday +%Y%m%d)
+fi
+touch -t "${REF}0000.00" "$LDIR/midnight"
+
+# Generate consecutive numbering for all relevant files
+# Save rename data in list to restore later
+RENAME="$LDIR/mv.txt"
+: > "$RENAME"
+find "$LDIR/"$RPAT -newer "$LDIR/midnight" \
+	| sort | cat -n | while read i f; do
+	f=$(basename "$f")
+	printf "%s $LFMT\n" "$f" "$i" >> "$RENAME"
+done
+
+# Move files temporarily for making video
+rm -f "$LDIR/"$LPAT
+cat "$RENAME" | while read a b; do
+	mv -f "$LDIR/$a" "$LDIR/$b"
+done
+
+# Number of jpegs
+n=$(ls "$LDIR/"$LPAT | wc -l)
+if (( n == 0 )); then
+	exit 1
+fi
+
+# Make video
+VID="$VIDEODIR/webcam-$REF.mp4"
+avconv -y \
+	-r 4 -i "/tmp/img-%04d.jpg" \
+	-an -r 4 -c:v libx264 "$VID" \
+	&>/dev/null
+chown pi:pi "$VID"
+
+# Move back jpegs
+cat "$RENAME" | while read b a; do
+	mv -f "$LDIR/$a" "$LDIR/$b"
+done
+chown pi:pi "$LDIR/"$RPAT
+
+# Upload video
+[ -r "$VID" ] && scp -p -q -i "$IDFILE" \
+	"$VID" "$SERVER":"$RDIR/$REF.mp4"
