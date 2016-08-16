@@ -1,0 +1,165 @@
+#!/bin/bash
+
+###########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : macOS, Raspbian
+# Requires   : bash, bc
+# Location   : ~/bin/
+# Name       : sun
+# Version    : 1.0.0
+# Date       : 2016-08-16
+# Purpose    : Calculate local sunrise and sunset times
+# Parameters : Optional date as 'YYYY-MM-DD'
+# Settings   : LAT/LON = local coordinates
+#              Timezone offset is automatically obtained from `date'
+#              without regard for LAT/LON settings.
+# Output     : Local sunrise and sunset times as 'HMM,HMM'
+# Exit     0 : No errors
+#          1 : Supplied date wrong format or invalid
+# Credits    : Astronomical formulae from
+#              http://www.srrb.noaa.gov/highlights/sunrise/calcdetails.html
+###########################################################################
+
+LAT=52.1
+LON=5.1
+
+# Darwin (macOS) or Linux (Raspbian)
+OS=$(uname)
+
+# Today
+if [ -z "$1" ]; then
+	ISODATE=$(date +'%F')
+else
+	ERROR=true
+	N=${#1}
+	if (( N == 10 )); then
+		M=$(expr "$1" : '[12][019][0-9][0-9]-[012][0-9]-[0-3][0-9]')
+		if (( M == 10 )); then
+			# macOS or Raspbian
+			[[ "$OS" == "Darwin" ]] && TEST=$(date -j -f '%F' "$1" +'%F' 2>/dev/null)
+			[[ "$OS" == "Linux" ]]  && TEST=$(date -d "$1" +'%F' 2>/dev/null)
+			if [[ "$TEST" == "$1" ]]; then
+				ISODATE=$1
+				ERROR=false
+			fi
+		fi
+	fi
+	if $ERROR; then
+		APP=$(basename "$0")
+		echo "Wrong date format or invalid date. Usage: $APP [YYYY-MM-DD]" 1>&2
+		exit 1
+	fi
+fi
+
+# First approximation of solar noon
+NOON='12:00:00'
+[[ "$OS" == "Darwin" ]] && ZONE=$(date -j -f '%F %T' "$ISODATE $NOON" +'%z')
+[[ "$OS" == "Linux" ]]  && ZONE=$(date -d "$ISODATE $NOON" +'%z')
+S=${ZONE:0:1}	# sign
+H=${ZONE:1:2}	# hours
+M=${ZONE:3}	# minutes
+S=${S#+}	# remove plus sign
+H=${H#0}	# remove leading zero
+case "$M" in
+	00 ) M=    ;;
+	15 ) M=.25 ;;
+	30 ) M=.5  ;;
+	45 ) M=.75 ;;
+esac
+ZONE="$S$H$M"
+if [[ "$ZONE" == '1' ]]; then
+	# Good approximation of solar noon
+	# on standard time in the Netherlands
+	NOON='12:45:00'
+elif [[ "$ZONE" == '2' ]]; then
+	# Good approximation of solar noon
+	# on daylight saving time in the Netherlands
+	NOON='13:45:00'
+fi
+[[ "$OS" == "Darwin" ]] && UNIX=$(date -j -f '%F %T' "$ISODATE $NOON" +'%s')
+[[ "$OS" == "Linux" ]]  && UNIX=$(date -d "$ISODATE $NOON" +'%s')
+
+bc -l <<InputFromHERE
+lat = $LAT
+lon = $LON
+tz = $ZONE
+unix = $UNIX
+
+pi = 4 * a(1)
+rad = pi / 180
+
+define mod(p, q) {
+	oldscale = scale
+	scale = 0
+	intdiv = p / q
+	scale = oldscale
+	return p - intdiv * q
+}
+
+define tan(a) {
+	return s(a) / c(a)
+}
+
+define asin(x) {
+	return 2 * a(x / (1 + sqrt(1 - x * x)))
+}
+
+define acos(x) {
+	if (x == -1) return pi
+	return 2 * a(sqrt(1 - x * x) / (1 + x))
+}
+
+define atan2(x, y) {
+	if (x == 0 && y == 0) return 0
+	if (x == 0 ) {
+		if (y > 0) return pi / 2
+		return -pi / 2
+	}
+	result = a(y / x)
+	if (x > 0) return result
+	if (y >= 0) return result + pi
+	return result - pi
+}
+
+define printtime(f) {
+	oldscale = scale
+	scale = 0
+	hours = f / 1
+	minutes = ((f - hours) * 60 + .5) / 1
+	while (minutes >= 60) { minutes -= 60; hours += 1 }
+	print hours
+	if (minutes < 10) print "0"
+	print minutes
+	scale = oldscale
+}
+
+f = 2440587.5 + unix / (24 * 60 * 60)
+g = (f - 2451545) / 36525
+i = mod(280.46646 + g * (36000.76983 + g * .0003032), 360)
+j = 357.52911 + g * (35999.05029 - .0001537 * g)
+k = .016708634 - g * (.000042037 + .0000001267 * g)
+l = s(j * rad) * (1.914602 - g * (.004817 + .000014 * g)) + s(2 * j * rad) * (.019993 - .000101 * g) + s(3 * j * rad) * .000289
+m = i + l
+n = j + l
+o = 1.000001018 * (1 - k * k) / (1 + k * c(n * rad))
+p = m - .00569 - .00478 * s((125.04 - 1934.136 * g) * rad)
+q = 23 + (26 + ((21.448 - g * (46.815 + g * (.00059 - g * .001813)))) / 60) / 60
+r = q + .00256 * c((125.04 - 1934.136 * g) * rad)
+s = atan2(c(p * rad), c(r * rad) * s(p * rad)) / rad
+t = asin(s(r * rad) * s(p * rad)) / rad
+u = tan((r / 2) * rad)
+u *= u
+v = 4 * (u * s(2 * i * rad) - 2 * k * s(j * rad) + 4 * k * u * s(j * rad) * c(2 * i * rad) - .5 * u * u * s(4 * i * rad) - 1.25 * k * k * s(2 * j * rad)) / rad
+w = acos(c(90.833 * rad) / (c(lat * rad) * c(t * rad)) - tan(lat * rad) * tan(t * rad)) / rad
+x = 12 - lon / 15 - v / 60 + tz
+y = x - w / 15
+z = x + w / 15
+
+discard = printtime(y)
+print ","
+discard = printtime(z)
+print "\n"
+InputFromHERE
+
+exit 0
