@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+# Check for mpc
+MPC=$(which mpc)
+[ ! -x "$MPC" ] && echo "Can't find mpc." >&2 && exit 1
+
+# Use cmdline parameter or MPD_HOST variable or "pi3"
+HOST=${1:-$MPD_HOST}
+HOST=${HOST:-"pi3"}
+
+# Fip <3
+STREAM="http://audio.scdn.arkena.com/11016/fip-midfi128.mp3"
+
+$MPC -h "$HOST" stop &> /dev/null
+$MPC -h "$HOST" clear &> /dev/null
+$MPC -h "$HOST" add "$STREAM" &> /dev/null
+$MPC -h "$HOST" play &> /dev/null
+$MPC -h "$HOST" volume
+
+exit 0
