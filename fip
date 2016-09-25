@@ -11,16 +11,16 @@ HOST=${HOST:-'pi3'}
 # Fip stream URL
 FIP='http://audio.scdn.arkena.com/11016/fip-midfi128.mp3'
 
-# Save current track, stop playing 
+# Save current track, stop playing
 CUR=$($MPC -h "$HOST" -f "%file%" current)
 [ -n "$CUR" ] && $MPC -h "$HOST" stop &> /dev/null
 
-# Start Fip if it wasn't playing 
+# Start Fip if it wasn't playing
 if [[ "$CUR" != "$FIP" ]]; then
     $MPC -h "$HOST" clear &> /dev/null
     $MPC -h "$HOST" add "$FIP" &> /dev/null
     $MPC -h "$HOST" play &> /dev/null
-    # Display volume 
+    # Display volume
     $MPC -h "$HOST" volume
 fi
 exit 0
