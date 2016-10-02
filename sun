@@ -1,28 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-###########################################################################
-# Made by    : Ewoud Dronkert
-# Licence    : GNU GPL v3
-# Platform   : macOS, Raspbian
-# Requires   : bash, bc
-# Location   : ~/bin/
-# Name       : sun
-# Version    : 1.0.0
-# Date       : 2016-08-16
-# Purpose    : Calculate local sunrise and sunset times
-# Parameters : Optional date as 'YYYY-MM-DD'
-# Settings   : LAT/LON = local coordinates
-#              Timezone offset is automatically obtained from `date'
-#              without regard for LAT/LON settings.
-# Output     : Local sunrise and sunset times as 'HMM,HMM'
-# Exit     0 : No errors
-#          1 : Supplied date wrong format or invalid
-# Credits    : Astronomical formulae from
-#              http://www.srrb.noaa.gov/highlights/sunrise/calcdetails.html
-###########################################################################
-
+# Default location Utrecht
+# NB: all lat/lon values truncated to protect privacy
 LAT=52.1
 LON=5.1
+
+if [[ "$1" =~ [[:alpha:]] ]]; then
+	case $(echo "$1" | tr '[:upper:]' '[:lower:]') in
+		utrecht     ) LAT=52.1; LON=5.1;;
+		ouddorp     ) LAT=51.8; LON=3.9;;
+		papendrecht ) LAT=51.8; LON=4.7;;
+		amstelveen  ) LAT=52.3; LON=4.8;;
+		*           ) echo 'Unknown location, using Utrecht.' 1>&2
+	esac
+	shift
+fi
 
 # Darwin (macOS) or Linux (Raspbian)
 OS=$(uname)
@@ -47,7 +39,7 @@ else
 	fi
 	if $ERROR; then
 		APP=$(basename "$0")
-		echo "Wrong date format or invalid date. Usage: $APP [YYYY-MM-DD]" 1>&2
+		echo "Wrong date format or invalid date. Usage: $APP [Location] [YYYY-MM-DD]" 1>&2
 		exit 1
 	fi
 fi
@@ -161,5 +153,3 @@ print ","
 discard = printtime(z)
 print "\n"
 InputFromHERE
-
-exit 0
