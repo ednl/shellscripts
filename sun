@@ -1,5 +1,27 @@
 #!/usr/bin/env bash
 
+###########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : macOS, Raspbian
+# Requires   : bash, bc
+# Location   : ~/bin/
+# Name       : sun
+# Version    : 1.1.0
+# Date       : 2016-10-08
+# Purpose    : Calculate local sunrise and sunset times
+# Parameters : Optional location, default Utrecht NL
+#              Optional date as 'YYYY-MM-DD', default today
+# Settings   : LAT/LON = local coordinates
+#              Timezone offset is automatically obtained from `date'
+#              without regard for LAT/LON settings.
+# Output     : Local sunrise and sunset times as 'HMM,HMM'
+# Exit     0 : No errors
+#          1 : Supplied date wrong format or invalid
+# Credits    : Astronomical formulae from
+#              http://www.srrb.noaa.gov/highlights/sunrise/calcdetails.html
+###########################################################################
+
 # Default location Utrecht
 # NB: all lat/lon values truncated to protect privacy
 LAT=52.1
