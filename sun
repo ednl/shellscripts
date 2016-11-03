@@ -22,12 +22,14 @@
 #              http://www.srrb.noaa.gov/highlights/sunrise/calcdetails.html
 ###########################################################################
 
-# Default location Utrecht
+# Default location (Utrecht, NL)
 # NB: all lat/lon values truncated to protect privacy
 LAT=52.1
 LON=5.1
 
+# Check first parameter
 if [[ "$1" =~ [[:alpha:]] ]]; then
+	# Check if first parameter is a supported placename
 	case $(echo "$1" | tr '[:upper:]' '[:lower:]') in
 		utrecht     ) LAT=52.1; LON=5.1;;
 		ouddorp     ) LAT=51.8; LON=3.9;;
@@ -35,22 +37,24 @@ if [[ "$1" =~ [[:alpha:]] ]]; then
 		amstelveen  ) LAT=52.3; LON=4.8;;
 		*           ) echo 'Unknown location, using Utrecht.' 1>&2
 	esac
-	shift
+	shift  # remove first parameter
 fi
 
-# Darwin (macOS) or Linux (Raspbian)
+# Get the OS name as either Darwin (macOS) or Linux (Raspbian)
 OS=$(uname)
 
-# Today
+# Get today's date either from supplied parameter or `date` command
 if [ -z "$1" ]; then
+	# No (more) parameters, use 'date' command
 	ISODATE=$(date +'%F')
 else
+	# Check if this parameter is a valid date in YYYY-MM-DD format
 	ERROR=true
 	N=${#1}
 	if (( N == 10 )); then
 		M=$(expr "$1" : '[12][019][0-9][0-9]-[012][0-9]-[0-3][0-9]')
 		if (( M == 10 )); then
-			# macOS or Raspbian
+			# Different validity checks for macOS and Raspbian
 			[[ "$OS" == "Darwin" ]] && TEST=$(date -j -f '%F' "$1" +'%F' 2>/dev/null)
 			[[ "$OS" == "Linux" ]]  && TEST=$(date -d "$1" +'%F' 2>/dev/null)
 			if [[ "$TEST" == "$1" ]]; then
@@ -66,7 +70,7 @@ else
 	fi
 fi
 
-# First approximation of solar noon
+# First approximation of solar noon, good enough anywhere, really, but see below
 NOON='12:00:00'
 [[ "$OS" == "Darwin" ]] && ZONE=$(date -j -f '%F %T' "$ISODATE $NOON" +'%z')
 [[ "$OS" == "Linux" ]]  && ZONE=$(date -d "$ISODATE $NOON" +'%z')
@@ -82,6 +86,8 @@ case "$M" in
 	45 ) M=.75 ;;
 esac
 ZONE="$S$H$M"
+# For greatest accuracy, expand or edit this zone check to include your own
+# timezone and adjust to your best local approximation of solar noon:
 if [[ "$ZONE" == '1' ]]; then
 	# Good approximation of solar noon
 	# on standard time in the Netherlands
@@ -91,9 +97,11 @@ elif [[ "$ZONE" == '2' ]]; then
 	# on daylight saving time in the Netherlands
 	NOON='13:45:00'
 fi
+# Get Unixdate number for solar noon on this day
 [[ "$OS" == "Darwin" ]] && UNIX=$(date -j -f '%F %T' "$ISODATE $NOON" +'%s')
 [[ "$OS" == "Linux" ]]  && UNIX=$(date -d "$ISODATE $NOON" +'%s')
 
+# Actual calculation starts here using `bc`
 bc -l <<InputFromHERE
 lat = $LAT
 lon = $LON
