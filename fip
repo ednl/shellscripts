@@ -9,7 +9,7 @@ HOST=${1:-$MPD_HOST}
 HOST=${HOST:-'pi3'}
 
 # Fip stream URL
-FIP='http://aifae8Cah8.lb.vip.cdn.dvmr.fr:80/fip-midfi.mp3'
+FIP='http://aifae8cah8.lb.vip.cdn.dvmr.fr:80/fip-midfi.mp3'
 
 # Save current track, stop playing
 CUR=$($MPC -h "$HOST" -f "%file%" current)
