@@ -1,3 +1,5 @@
+# macOS version
+
 # Modifiers
 alias cp='cp -p'
 alias scp='scp -p'
