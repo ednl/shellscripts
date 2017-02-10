@@ -57,19 +57,19 @@ CH=$(echo $CH | tr '[:lower:]' '[:upper:]')
 # Unmount mounted SD card volumes
 for VOL in $(mount | grep -oP "${SDCARD}s\d+"); do
 	echo -n "Unmounting $VOL ... "
-	#diskutil unmount $VOL &> /dev/null
+	diskutil unmount $VOL &> /dev/null
 	[ $? -ne 0 ] && echo "Failed." && exit 7
 	echo "Done."
 done
 
 # Write disk image file to SD card raw device
 echo -n "Writing disk image to SD card ... "
-#dd bs=1m if="$1" of=/dev/rdisk${SDCARD:9} &> /dev/null
+dd bs=1m if="$1" of=/dev/rdisk${SDCARD:9} &> /dev/null
 [ $? -ne 0 ] && echo "Failed." && exit 8
 echo "Done."
 
 # Eject SD card raw device
 echo -n "Ejecting SD card ... "
-#diskutil eject /dev/rdisk${SDCARD:9} &> /dev/null
+diskutil eject /dev/rdisk${SDCARD:9} &> /dev/null
 [ $? -ne 0 ] && echo "Failed." && exit 9
 echo "Done."
