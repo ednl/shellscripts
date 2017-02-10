@@ -7,41 +7,80 @@
 # Requires   : bash, diskutil, dd
 # Location   : ~/bin/
 # Name       : img2card
-# Version    : 1.0.0
+# Version    : 1.1.0
 # Date       : 2017-02-10
 # Purpose    : Write disk image to SD card
-# Parameters : <disk image file name>
-# Settings   : none
+# Parameters : Optional [disk image file name]
+# Settings   : SEARCHDIR = where to look for image files (~/Downloads)
+#            : SEARCHPAT = file name pattern of image files (*.img)
 # Exit     0 : No script errors, image written, card ejected
 #          1 : Not invoked as root
-#          2 : No argument
-#          3 : Argument not a file
-#          4 : Argument not readable
-#          5 : Argument not named *.img
+#          2 : No argument and no image found
+#          3 : Argument or image not a file
+#          4 : Argument or image not readable
+#          5 : Argument or image not named *.img
 #          6 : SD card not found
 #          7 : SD card not unmounted
 #          8 : Image not written
 #          9 : SD card not ejected
 #########################################################################
 
+SEARCHDIR=~/Downloads
+SEARCHPAT='*.img'
+
+SCRIPT=$(basename "$0")
+
 # Must be root to use dd
 USER=$(whoami)
-[ "$USER" != "root" ] && echo "Run this script as root (use sudo)." 1>&2 && exit 1
+[ "$USER" != "root" ] && echo "Must be root to run this script. Usage: sudo ${SCRIPT} [filename]" 1>&2 && exit 1
+
+# Find image file
+if [ -z "$1" ]; then
+	N=$(ls -d "$SEARCHDIR"/$SEARCHPAT 2> /dev/null | wc -l | xargs)
+	[ "$N" -eq 0 ] && echo "No disk image found in '$SEARCHDIR'. Usage: sudo ${SCRIPT} [filename]" 1>&2 && exit 2
+	if [ "$N" -eq 1 ]; then
+		IMG=$(ls -d "$SEARCHDIR"/$SEARCHPAT)
+	else
+		echo "Multiple disk image files found in $SEARCHDIR"
+		echo
+		a=
+		i=0
+		for f in "$SEARCHDIR"/$SEARCHPAT; do
+			(( ++i ))
+			a[$i]="$f"
+			g=$(basename "$f")
+			echo "  $i. $g"
+			(( i == 9 )) && break
+		done
+		echo
+		echo -n "Which one? (1-$i, q to quit) "
+		j=0
+		while (( j < 1 || j > i )); do
+			read -n 1 j
+			j=$(echo $j | tr '[:lower:]' '[:upper:]')
+			[ "$j" = "Q" ] && echo && exit 0
+			[[ "$j" < "1" || "$j" > "9" ]] && j=0
+		done
+		echo
+		IMG="${a[$j]}"
+	fi
+else
+	IMG="$1"
+fi
 
 # Check argument
-SCRIPT=$(basename "$0")
-[ -z "$1" ] && echo "Usage: sudo ${SCRIPT} filename" 1>&2 && exit 2
-[ ! -f "$1" ] && echo "Argument '$1' is not a regular file." 1>&2 && exit 3
-[ ! -r "$1" ] && echo "File '$1' can not be read." 1>&2 && exit 4
-EXT=$(echo ${1:(-4)} | tr '[:upper:]' '[:lower:]')
+[ ! -f "$IMG" ] && echo "Not a regular file: $IMG" 1>&2 && exit 3
+[ ! -r "$IMG" ] && echo "Not readable: $IMG" 1>&2 && exit 4
+EXT=$(echo ${IMG:(-4)} | tr '[:upper:]' '[:lower:]')
 [ "$EXT" != ".img" ] && echo "File name extension '$EXT' should be: .img" 1>&2 && exit 5
 
 # Get SD card device name
+echo -n "Searching for SD card ... "
 SDCARD=$(diskutil info -all | grep -m 1 -B 3 'SD/MMC' | grep -oP '/dev/disk\d+')
-[ -z "$SDCARD" ] && echo 'No SD card found.' 1>&2 && exit 6
+[ -z "$SDCARD" ] && echo 'Not found.' 1>&2 && exit 6
 
 # Let the user check!
-echo "SD card found as device '$SDCARD'. Please double check:"
+echo "Found as device '$SDCARD'. Please double check:"
 echo
 diskutil list $SDCARD
 echo
@@ -64,7 +103,7 @@ done
 
 # Write disk image file to SD card raw device
 echo -n "Writing disk image to SD card ... "
-dd bs=1m if="$1" of=/dev/rdisk${SDCARD:9} &> /dev/null
+dd bs=1m if="$IMG" of=/dev/rdisk${SDCARD:9} &> /dev/null
 [ $? -ne 0 ] && echo "Failed." && exit 8
 echo "Done."
 
