@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+
+#########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : macOS
+# Requires   : bash, diskutil, dd
+# Location   : ~/bin/
+# Name       : img2card
+# Version    : 1.0.0
+# Date       : 2017-02-10
+# Purpose    : Write disk image to SD card
+# Parameters : <disk image file name>
+# Settings   : none
+# Exit     0 : No script errors, image written, card ejected
+#          1 : Not invoked as root
+#          2 : No argument
+#          3 : Argument not a file
+#          4 : Argument not readable
+#          5 : Argument not named *.img
+#          6 : SD card not found
+#          7 : SD card not unmounted
+#          8 : Image not written
+#          9 : SD card not ejected
+#########################################################################
+
+# Must be root to use dd
+USER=$(whoami)
+[ "$USER" != "root" ] && echo "Run this script as root (use sudo)." 1>&2 && exit 1
+
+# Check argument
+SCRIPT=$(basename "$0")
+[ -z "$1" ] && echo "Usage: sudo ${SCRIPT} filename" 1>&2 && exit 2
+[ ! -f "$1" ] && echo "Argument '$1' is not a regular file." 1>&2 && exit 3
+[ ! -r "$1" ] && echo "File '$1' can not be read." 1>&2 && exit 4
+EXT=$(echo ${1:(-4)} | tr '[:upper:]' '[:lower:]')
+[ "$EXT" != ".img" ] && echo "File name extension '$EXT' should be: .img" 1>&2 && exit 5
+
+# Get SD card device name
+SDCARD=$(diskutil info -all | grep -m 1 -B 3 'SD/MMC' | grep -oP '/dev/disk\d+')
+[ -z "$SDCARD" ] && echo 'No SD card found.' 1>&2 && exit 6
+
+# Let the user check!
+echo "SD card found as device '$SDCARD'. Please double check:"
+echo
+diskutil list $SDCARD
+echo
+
+# Ask confirmation
+CH=
+read -n 1 -p "Write disk image to '$SDCARD', destroying all its data? (y/N) " CH
+[ -z "$CH" ] && exit 0
+echo
+CH=$(echo $CH | tr '[:lower:]' '[:upper:]')
+[ "$CH" != "Y" ] && exit 0
+
+# Unmount mounted SD card volumes
+for VOL in $(mount | grep -oP "${SDCARD}s\d+"); do
+	echo -n "Unmounting $VOL ... "
+	#diskutil unmount $VOL &> /dev/null
+	[ $? -ne 0 ] && echo "Failed." && exit 7
+	echo "Done."
+done
+
+# Write disk image file to SD card raw device
+echo -n "Writing disk image to SD card ... "
+#dd bs=1m if="$1" of=/dev/rdisk${SDCARD:9} &> /dev/null
+[ $? -ne 0 ] && echo "Failed." && exit 8
+echo "Done."
+
+# Eject SD card raw device
+echo -n "Ejecting SD card ... "
+#diskutil eject /dev/rdisk${SDCARD:9} &> /dev/null
+[ $? -ne 0 ] && echo "Failed." && exit 9
+echo "Done."
