@@ -1,37 +1,49 @@
 #!/usr/bin/env bash
 
+# Global script variables, change here to customise
+MYRADIO='black'
+STREAMNAME='Fip Radio'
+STREAMURL='http://chai5she.cdn.dvmr.fr/fip-midfi.mp3'
+
 # Check for mpc
 [ ! -x "$(which mpc)" ] && echo 'Program "mpc" not found.' >&2 && exit 1
 
-# Use first cmdline parameter or MPD_HOST variable or "black"
+# Use first cmdline parameter or MPD_HOST variable or MYRADIO
 HOST=${1:-$MPD_HOST}
-HOST=${HOST:-'black'}
+HOST=${HOST:-$MYRADIO}
 
-# Check which host should be contacted, display if not localhost
+# Use port specified as "host:port" or MPD_PORT variable or "6600"
+set - ${HOST/:/' '}
+HOST=$1
+PORT=${2:-$MPD_PORT}
+PORT=${PORT:-'6600'}
+
+# Check if radio hostname can or should be localhost
 THISHOST=$(hostname -s)
 [ "$HOST" = "$THISHOST" -o "$HOST" = 'me' -o "$HOST" = 'this' ] && HOST='localhost'
-[ "$HOST" != 'localhost' ] && echo -n "Host \"$HOST\" "
 
-# Fip stream URL
-FIP='http://chai5she.cdn.dvmr.fr/fip-midfi.mp3'
+# Check if mpd can be reached on host:port
+ERR=$(mpc -q -h "$HOST" -p "$PORT" 2>&1)
+[ -n "$ERR" ] && echo "Host down or mpd not running on \"$HOST:$PORT\"." >&2 && exit 2
 
-# Save current track, stop playing
-CUR=$(mpc -h "$HOST" -f '%file%' current)
-[ -n "$CUR" ] && mpc -h "$HOST" stop &> /dev/null
+# Save current track in variable OLD, stop playing
+OLD=$(mpc -h "$HOST" -p "$PORT" -f '%file%' current)
+[ -n "$OLD" ] && mpc -q -h "$HOST" -p "$PORT" stop &> /dev/null
 
-# Display status
-echo -n 'Fip Radio '
+# Status
+echo -n "$STREAMNAME "
+[ "$HOST" != 'localhost' ] && echo -n "on \"$HOST\" "
 
-# Start Fip if it wasn't playing before
-if [ "$CUR" = "$FIP" ]; then
+# Start stream if it wasn't playing before
+if [ "$OLD" = "$STREAMURL" ]; then
 	# It was playing before but now it's off
 	echo 'off'
 else
 	# Radio was off or playing something else
-    mpc -h "$HOST" clear &> /dev/null
-    mpc -h "$HOST" add "$FIP" &> /dev/null
-    mpc -h "$HOST" play &> /dev/null
+    mpc -q -h "$HOST" -p "$PORT" clear &> /dev/null
+    mpc -q -h "$HOST" -p "$PORT" add "$STREAMURL" &> /dev/null
+    mpc -q -h "$HOST" -p "$PORT" play &> /dev/null
     # Display volume
-    mpc -h "$HOST" volume
+    mpc -h "$HOST" -p "$PORT" volume
 fi
 exit 0
