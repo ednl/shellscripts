@@ -1,34 +1,37 @@
 #!/usr/bin/env bash
 
 # Check for mpc
-APP=$(which mpc)
-[ ! -x "$APP" ] && echo "Can't find mpc." >&2 && exit 1
+[ ! -x "$(which mpc)" ] && echo 'Program "mpc" not found.' >&2 && exit 1
 
-# Use cmdline parameter or MPD_HOST variable or "black"
+# Use first cmdline parameter or MPD_HOST variable or "black"
 HOST=${1:-$MPD_HOST}
-HOST=${HOST:-black}
+HOST=${HOST:-'black'}
 
-THISHOST=$(uname -n)
-[ "$HOST" = "$THISHOST" -o "$HOST" = "me" -o "$HOST" = "this" ] && HOST=localhost
-[ "$HOST" != "localhost" ] && echo -n "Host '$HOST' "
+# Check which host should be contacted, display if not localhost
+THISHOST=$(hostname -s)
+[ "$HOST" = "$THISHOST" -o "$HOST" = 'me' -o "$HOST" = 'this' ] && HOST='localhost'
+[ "$HOST" != 'localhost' ] && echo -n "Host \"$HOST\" "
 
 # Fip stream URL
 FIP='http://chai5she.cdn.dvmr.fr/fip-midfi.mp3'
 
 # Save current track, stop playing
-CUR=$($APP -h "$HOST" -f "%file%" current)
-[ -n "$CUR" ] && $APP -h "$HOST" stop &> /dev/null
+CUR=$(mpc -h "$HOST" -f '%file%' current)
+[ -n "$CUR" ] && mpc -h "$HOST" stop &> /dev/null
 
+# Display status
 echo -n 'Fip Radio '
 
 # Start Fip if it wasn't playing before
 if [ "$CUR" = "$FIP" ]; then
+	# It was playing before but now it's off
 	echo 'off'
 else
-    $APP -h "$HOST" clear &> /dev/null
-    $APP -h "$HOST" add "$FIP" &> /dev/null
-    $APP -h "$HOST" play &> /dev/null
+	# Radio was off or playing something else
+    mpc -h "$HOST" clear &> /dev/null
+    mpc -h "$HOST" add "$FIP" &> /dev/null
+    mpc -h "$HOST" play &> /dev/null
     # Display volume
-    $APP -h "$HOST" volume
+    mpc -h "$HOST" volume
 fi
 exit 0
