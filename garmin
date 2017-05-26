@@ -6,16 +6,17 @@
 # Platform   : Mac OS X
 # Requires   : bash
 # Location   : ~/bin/
-# Name       : fittime
+# Name       : garmin
 # Version    : 2.2.0
-# Date       : 2017-04-29
-# Purpose    : Align timestamp with file name for Garmin .fit files.
-#              Also remove DOS 'execute' and OS X extended attributes.
+# Date       : 2017-05-09
+# Purpose    : Copies new .fi files from Garmin device to disk. Ejects
+#              Garmin device. Align timestamps with file names. Also
+#              remove DOS 'execute' and macOS extended attributes.
 # Parameters : none
-# Settings   : FITDIR = location of Garmin Activity .fit files
+# Settings   : DST = location of saved Garmin Activity .fit files
 # Exit     0 : No errors (but chmod/xattr/touch errors not monitored)
-#          1 : FITDIR not found or not a directory
-#          2 : No .fit files in FITDIR directory
+#          1 : DST not found or not a directory
+#          2 : No .fit files in DST directory
 #######################################################################
 
 # Use backslashes to escape spaces, if any, in the directory name
