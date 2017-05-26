@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #######################################################################
 # Made by    : Ewoud Dronkert
@@ -7,8 +7,8 @@
 # Requires   : bash
 # Location   : ~/bin/
 # Name       : fittime
-# Version    : 2.1.0
-# Date       : 2016-07-28
+# Version    : 2.2.0
+# Date       : 2017-04-29
 # Purpose    : Align timestamp with file name for Garmin .fit files.
 #              Also remove DOS 'execute' and OS X extended attributes.
 # Parameters : none
@@ -19,18 +19,35 @@
 #######################################################################
 
 # Use backslashes to escape spaces, if any, in the directory name
-FITDIR=~/Documents/Garmin/Activities
+DEV=/Volumes/GARMIN
+SRC="$DEV/Garmin/Activities"
+DST=~/Documents/Garmin/Activities
 
 # Directory exists?
-if [ -d "$FITDIR" ]; then
-	echo "Using directory : $FITDIR"
+if [ -d "$DST" ]; then
+	echo "Using local directory : $DST"
 else
-	echo "FIT-file directory not found: $FITDIR" 1>&2
+	echo "Local FIT-file directory not found: $DST" 1>&2
 	exit 1
 fi
 
+# Device connected?
+if [ -d "$SRC" ]; then
+	echo "Copying new FIT files from Garmin ..."
+	rsync -a --ignore-existing --info=name "$SRC"/*.fit "$DST" 2>/dev/null
+	if [ $? -eq 0 ]; then
+		DSK=$(diskutil info "$DEV" | grep -oP '/dev/disk\d+')
+		if [ -n "$DSK" ]; then
+			echo "Ejecting Garmin ..."
+			diskutil eject "$DSK"
+		fi
+	fi
+else
+	echo "Garmin device not connected at $DEV"
+fi
+
 # Exit early if no files found
-tot=$(ls "$FITDIR"/*.fit | wc -l | grep -oE '\d+')
+tot=$(\ls "$DST"/*.fit | grep -E '\.fit$' | wc -l | grep -oE '[0-9]+')
 if (( tot >= 1 )); then
 	echo "FIT-files found : $tot"
 else
@@ -39,20 +56,20 @@ else
 fi
 
 # Remove macOS extended attributes
-xattr "$FITDIR"/*.fit | cut -d':' -f1 | sort | uniq | tr \\n \\0 | xargs -0 xattr -c
+xattr "$DST"/*.fit | cut -d':' -f1 | sort | uniq | xargs xattr -c
 
 # Change file mode to RW only for owner
-find "$FITDIR" -depth 1 -name *.fit -perm +177 -print0 | xargs -0 chmod 600
+find "$DST"/*.fit -perm +177 -print0 | xargs -0 chmod 600
 
 # Set file modification time according to file name
 err=0
 adj=0
-for f in "$FITDIR"/*.fit; do
+for f in "$DST"/*.fit; do
 
 	# File modification time in touch format
 	m=$(stat -f '%Sm' -t '%Y%m%d%H%M.%S' "$f")
 
-	# Faster than "basename $f"
+	# Much faster than "basename $f"
 	t=${f:(-23)}
 	# Remove dashes
 	t=${t//-/}
@@ -61,10 +78,12 @@ for f in "$FITDIR"/*.fit; do
 
 	if [[ "$m" != "$t" ]]; then
 		(( err++ ))
-		touch -cfm -t "$t" "$f" && (( adj++ ))
+		touch -cfm -t $t "$f" && (( adj++ ))
 	fi
 done
 
 echo "Wrong file time : $err"
 echo "Time adjusted   : $adj"
+
+open "$DST"
 exit 0
