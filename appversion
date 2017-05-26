@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : macOS
+# Requires   : bash, python
+# Location   : ~/bin/
+# Name       : appversion
+# Version    : 1.0.0
+# Date       : 2017-05-26
+# Purpose    : Get version number for macOS application.
+#              Checks for .app extension and /Applications path.
+# Parameters : -v = verbose
+# Settings   : APPDIR = standard applications directory (/Applications)
+#            : APPEXT = standard applications extension (.app)
+# Exit     0 : No errors
+#          1 : mdls not found
+#          2 : Argument missing
+#          3 : Application not found
+#          4 : Version number not found
+#######################################################################
+
+APPDIR='/Applications/'
+APPEXT='.app'
+
+BIN=$(which mdls)
+[ -z "$BIN" ] && { echo 'macOS utility "mdls" not found.' 1>&2; exit 1; }
+
+VERBOSE=false
+[ "$1" = "-v" ] && { VERBOSE=true; shift; }
+
+[ -z "$1" ] && { SCR=$(basename "$0"); echo "Useage: $SCR [-v] AppName" 1>&2; exit 2; }
+APP="${1%/}"  # Remove trailing slash
+
+# Is it a directory?
+if [ ! -d "$APP" ]; then
+
+	# Check for .app extension
+	LEN=${#APPEXT}
+	EXT="${APP:(-$LEN)}"
+	[ "$EXT" != "$APPEXT" ] && APP="$APP$APPEXT"
+	if [ ! -d "$APP" ]; then
+
+		# Check for slashes in name
+		LEN=${#APP}
+		PRE="${APP%%/*}"
+		IDX=${#PRE}
+		if [ "$IDX" -eq "$LEN" ]; then
+
+			# If no slashes then simply prefix APPDIR
+			APP="$APPDIR$APP"
+			if [ ! -d "$APP" ]; then
+
+				# Last try: replace supplied path to app with APPDIR
+				FULL=$(python -c "import os.path; print(os.path.realpath(os.path.abspath('$APP')))")
+				BASE=$(basename "$FULL")
+				APP="$APPDIR$BASE"; }
+			fi
+		fi
+	fi
+fi
+
+# Still not a directory?
+[ ! -d "$APP" ] && { $VERBOSE && echo "App not found : $APP" 1>&2; exit 3; }
+
+# Result
+$VERBOSE && echo -n "Version number of $APP : "
+VER=$(mdls -name kMDItemVersion "$APP" | grep -oP '[\d.]+')
+[ -z "$VER" ] && { $VERBOSE && echo 'not found' 1>&2; exit 4; }
+echo "$VER"
+exit 0
