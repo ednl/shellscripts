@@ -7,11 +7,11 @@
 # Requires   : bash
 # Location   : ~/bin or /usr/local/bin
 # Name       : timedelta
-# Version    : 1.0.0
-# Date       : 2016-08-29
-# Purpose    : Calculate time value plus or minus x minutes
-# Parameters : 1. <time> = 24h time as HMM or H:MM or H.MM (or HH etc.)
-#            : 2. +|-<delta> = time difference in minutes as +M or -M
+# Version    : 1.1.0
+# Date       : 2017-05-29
+# Purpose    : Calculate time value plus or minus "x" minutes
+# Parameters : 24h time value as HMM or H:MM or H.MM (or HH etc.)
+#            : time difference in minutes as +M or -M
 # Output     : New 24h time value as HMM
 # Exit     0 : No errors
 #          1 : Wrong parameter count
@@ -20,7 +20,6 @@
 #          4 : Time minutes >= 60
 #          5 : Delta not signed
 #          6 : Delta not a number
-#          7 : Delta > 60
 ###########################################################################
 
 [ $# -ne "2" ] && echo "Usage: $(basename $0) <time> +|-<delta>" 1>&2 && exit 1
@@ -45,8 +44,8 @@ fi
 (( M >= 60 )) && echo "Minutes out of range (0-59)." 1>&2 && exit 4
 
 # Second argument
-OP=${2:0:1}
-[ "$OP" != "+" -a "$OP" != "-" ] && echo "Second argument must start with + or -." 1>&2 && exit 5
+SIGN=${2:0:1}
+[ "$SIGN" != "+" -a "$SIGN" != "-" ] && echo "Second argument must start with + or -." 1>&2 && exit 5
 DELTA=${2:1}
 N=$(expr "$DELTA" : '^0*')
 DELTA=${DELTA:$N}
@@ -54,17 +53,22 @@ DELTA=${DELTA:$N}
 L=${#DELTA}
 N=$(expr "$DELTA" : '[0-9]*')
 (( L != N )) && echo "Second argument must be a signed number." 1>&2 && exit 6
-(( DELTA > 60 )) && echo "Delta out of range (0-60)." 1>&2 && exit 7
 
-if [ "$OP" = "-" ]; then
-	(( M -= DELTA ))
-	(( M < 0 )) && (( M += 60, H -= 1 ))
-	(( H < 0 )) && (( H += 24 ))
+# Calculation
+(( T = 60 * H + M ))
+if [ "$SIGN" = "-" ]; then
+	(( T -= DELTA ))
+	while (( T < 0 )); do
+		(( T += 1440 ))
+	done
 else
-	(( M += DELTA ))
-	(( M >= 60 )) && (( M -= 60, H += 1 ))
-	(( H >= 24 )) && (( H -= 24 ))
+	(( T += DELTA ))
+	while (( T >= 1440 )); do
+		(( T -= 1440 ))
+	done
 fi
+(( H = T / 60 ))
+(( M = T - 60 * H ))
 (( M < 10 )) && M="0$M"
 
 echo "$H$M"
