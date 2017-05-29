@@ -10,8 +10,8 @@
 # Version    : 1.1.0
 # Date       : 2017-05-29
 # Purpose    : Calculate time value plus or minus "x" minutes
-# Parameters : 24h time value as HMM or H:MM or H.MM (or HH etc.)
-#            : time difference in minutes as +M or -M
+# Parameters : 1. <time> = 24h time as HMM or H:MM or H.MM (or HH etc.)
+#            : 2. +|-<delta> = time difference in minutes as +M or -M
 # Output     : New 24h time value as HMM
 # Exit     0 : No errors
 #          1 : Wrong parameter count
