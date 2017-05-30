@@ -12,7 +12,7 @@
 # Date       : 2017-05-30
 # Purpose    : Download new KNMI temperature chart every 20 minutes, make
 #              daily video of collected images, upload to webserver.
-# Use        : Start as a system service
+# How to use : Start as a system service
 #              or from /etc/rc.local as "temperatuur &"
 #              or from the command line as "sudo nohup temperatuur &"
 # Settings   : DATA = web location of fresh image file
@@ -97,7 +97,7 @@ Oudere video's staan op $URL
 
 -- 
 Dit is een automatisch verstuurde e-mail."
-				echo "$BODY" | mail -s "Nieuwe webcamvideo" -r "$ADMIN" "$TO"
+				echo "$BODY" | mail -s "Nieuwe temperatuurvideo" -r "$ADMIN" "$TO"
 
 			fi
 		fi
