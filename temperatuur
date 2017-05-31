@@ -8,8 +8,8 @@
 #              remote server with ssh key access
 # Location   : /usr/local/bin
 # Name       : temperatuur
-# Version    : 1.0.0
-# Date       : 2017-05-30
+# Version    : 1.0.1
+# Date       : 2017-05-31
 # Purpose    : Download new KNMI temperature chart every 20 minutes, make
 #              daily video of collected images, upload to webserver.
 # How to use : Start as a system service
@@ -114,7 +114,7 @@ Dit is een automatisch verstuurde e-mail."
 	# Get KNMI temperature chart
 	FILE="$SAVE$(date +%Y%m%d%H%M)$SUF"
 	if curl -s "$DATA" > "$FILE"; then
-		convert "$FILE" -gravity center -extent $DIM "$FILE"
+		convert "$FILE" -define png:color-type=2 -gravity center -extent $DIM "$FILE"
 		chmod 644 "$FILE"
 		chown pi:pi "$FILE"
 	fi
