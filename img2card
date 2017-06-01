@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 #########################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
@@ -40,6 +39,8 @@ if [ -z "$1" ]; then
 	[ "$N" -eq 0 ] && echo "No disk image found in '$SEARCHDIR'. Usage: sudo ${SCRIPT} [filename]" 1>&2 && exit 2
 	if [ "$N" -eq 1 ]; then
 		IMG=$(ls -d "$SEARCHDIR"/$SEARCHPAT)
+		F=$(basename "$IMG")
+		echo "Disk image found: $F"
 	else
 		echo "Multiple disk image files found in $SEARCHDIR"
 		echo
@@ -76,8 +77,11 @@ EXT=$(echo ${IMG:(-4)} | tr '[:upper:]' '[:lower:]')
 
 # Get SD card device name
 echo -n "Searching for SD card ... "
-SDCARD=$(diskutil info -all | grep -m 1 -B 3 'SD/MMC' | grep -oP '/dev/disk\d+')
-[ -z "$SDCARD" ] && echo 'Not found.' 1>&2 && exit 6
+for SDCARD in /dev/disk?; do
+	FOUND=$(diskutil info $SDCARD | grep -c 'SD/MMC')
+	[ "$FOUND" -gt 0 ] && break
+done
+[ "$FOUND" -eq 0 ] && echo 'Not found.' 1>&2 && exit 6
 
 # Let the user check!
 echo "Found as device '$SDCARD'. Please double check:"

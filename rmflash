@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+
+function confirm() {
+	echo -n " (Y/N) "
+	while read -r -s -n 1 'ch'; do
+		if [[ $ch == [YyNn] ]]; then
+			[[ $ch == [Yy] ]] && retval=0
+			[[ $ch == [Nn] ]] && retval=1
+			break
+		fi
+	done
+	echo
+	return $retval
+}
+
+echo
+echo "Removing known Adobe/Macromedia/Flash directories ..."
+echo
+
+flashloc=(
+	~/Library/Caches/Adobe/Flash\ Player
+	~/Library/Caches/com.adobe.flashplayer.installmanager
+	~/Library/Preferences/Macromedia/Flash\ Player
+	/Library/PreferencePanes/Flash\ Player.prefPane
+	/Library/Application\ Support/Adobe/Flash\ Player\ Install\ Manager
+	/Library/Application\ Support/Macromedia
+	/Library/Internet\ Plug-Ins/Flash\ Player.plugin
+	/Library/Internet\ Plug-Ins/flashplayer.xpt
+	/Applications/Flash\ Player.app
+	~/Library/Preferences/com.macromedia.Flash\ Player.app.plist
+)
+for i in "${flashloc[@]}"; do
+	if [ -e "$i" ]; then
+		echo -n "Delete \"$i\"?"
+		if confirm; then
+			if [ -w "$i" ]; then
+				#echo "rm"
+				rm -fr "$i"
+			else
+				#echo "sudo rm"
+				sudo rm -fr "$i"
+			fi
+		fi
+	fi
+done
+
+echo
+echo "Remaining files and directories:"
+echo
+
+pre=(
+	~/Library
+	/Library
+	/Applications
+)
+sub=(
+	""
+	/Caches
+	/Preferences
+	/PreferencePanes
+	/Application\ Support
+	/Internet\ Plug-Ins
+)
+for i in "${pre[@]}"; do
+	for j in "${sub[@]}"; do
+		dir="$i$j"
+		if [ -d "$dir" ]; then
+			res=$(ls -al "$dir" | grep -iE 'flash|adobe|macromedia')
+			if [ ! -z "$res" ]; then
+				echo "$dir"
+				echo "$res"
+				echo
+			fi
+		fi
+	done
+done

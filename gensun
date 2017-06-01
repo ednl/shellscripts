@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+p=utrecht
+y=2017
+
+f="sun_${p}_${y}.txt"
+:>$f
+
+for i in {0..365}; do
+	d=$(date -j -v +${i}d 01010000$y +%Y-%m-%d)
+	s=$(sun $p $d)
+	echo "$d,$s" >> $f
+	echo "$d,$s"
+done

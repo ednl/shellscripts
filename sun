@@ -23,18 +23,23 @@
 ###########################################################################
 
 # Default location (Utrecht, NL)
-# NB: all lat/lon values truncated to protect privacy
-LAT=52.1
-LON=5.1
+LAT=52.094071
+LON=5.103526
+
+SEP="\t"
+if [[ "$1" == '-csv' ]]; then
+	SEP=,
+	shift
+fi
 
 # Check first parameter
 if [[ "$1" =~ [[:alpha:]] ]]; then
 	# Check if first parameter is a supported placename
 	case $(echo "$1" | tr '[:upper:]' '[:lower:]') in
-		utrecht     ) LAT=52.1; LON=5.1;;
-		ouddorp     ) LAT=51.8; LON=3.9;;
-		papendrecht ) LAT=51.8; LON=4.7;;
-		amstelveen  ) LAT=52.3; LON=4.8;;
+		utrecht     ) LAT=52.094071; LON=5.103526;;
+		ouddorp     ) LAT=51.818588; LON=3.915614;;
+		papendrecht ) LAT=51.822218; LON=4.679152;;
+		amstelveen  ) LAT=52.282613; LON=4.822836;;
 		*           ) echo 'Unknown location, using Utrecht.' 1>&2
 	esac
 	shift  # remove first parameter

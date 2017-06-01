@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+U=$(whoami)
+if [[ "x${U}x" != "xrootx" ]]; then
+	N=$(basename "$0")
+	echo "This script needs to be run as root. Use: sudo $N" 1>&2
+	exit 1
+fi
+
+echo
+echo "Selfupdate ..."
+echo
+# this includes sync
+port selfupdate
+
+echo
+echo "Outdated:"
+port outdated
+
+echo
+echo "Upgrade ..."
+echo
+port -c upgrade outdated
+
+echo
+echo "Clean ..."
+echo
+port -q uninstall inactive
+port -q clean --all installed
+
+echo
+echo "Installed:"
+port installed

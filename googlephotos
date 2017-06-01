@@ -1,0 +1,197 @@
+#!/usr/bin/env bash
+
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : macOS
+# Requires   : Bash, xattr
+# Location   : ~/bin/
+# Name       : googlephotos
+# Version    : 1.0.0
+# Date       : 2017-05-12
+# Purpose    : Align timestamps with file names for Moto G3 photos and
+#              other image files in Google Drive. Also set file mode to
+#              0600 and remove macOS extended attributes. Then copy
+#              all files and subdirectories to a backup directory.
+# Parameters : none
+# Settings   : MONTHS = how many recent months to process
+#              LOCALNAME = localised name of the Google Photos subdir
+#              BAK = backup directory
+#######################################################################
+
+MONTHS=6
+LOCALNAME="Google Foto's"
+DRV=~/"Google Drive/$LOCALNAME"
+BAK=~/"Pictures/$LOCALNAME"
+
+function gp_moto_img () {
+	local f
+	local t
+	for f in "$1"/IMG_[12][0-9][0-9][0-9][01][0-9][0-3][0-9]_[0-2][0-9][0-5][0-9][0-5][0-9]*.jpg; do
+		if [ -f "$f" ]; then
+			t=${f##*/}
+			t=${t:4:15}
+			t=${t/_/}
+			touch -t ${t:0:12}.${t:12:2} "$f"
+		fi
+	done
+}
+
+function gp_moto_vid () {
+	local f
+	local t
+	for f in "$1"/VID_[12][0-9][0-9][0-9][01][0-9][0-3][0-9]_[0-2][0-9][0-5][0-9][0-5][0-9]*.mp4; do
+		if [ -f "$f" ]; then
+			t=${f##*/}
+			t=${t:4:15}
+			t=${t/_/}
+			touch -t ${t:0:12}.${t:12:2} "$f"
+		fi
+	done
+}
+
+function gp_lrm_export () {
+	local f
+	local t
+	for f in "$1"/LRM_EXPORT_[12][0-9][0-9][0-9][01][0-9][0-3][0-9]_[0-2][0-9][0-5][0-9][0-5][0-9]*.jpg; do
+		if [ -f "$f" ]; then
+			t=${f##*/}
+			t=${t:11:15}
+			t=${t/_/}
+			touch -t ${t:0:12}.${t:12:2} "$f"
+		fi
+	done
+}
+
+function gp_screenshot () {
+	local f
+	local t
+	for f in "$1"/Screenshot_[12][0-9][0-9][0-9][01][0-9][0-3][0-9]-[0-2][0-9][0-5][0-9][0-5][0-9]*.png; do
+		if [ -f "$f" ]; then
+			t=${f##*/}
+			t=${t:11:15}
+			t=${t/-/}
+			touch -t ${t:0:12}.${t:12:2} "$f"
+		fi
+	done
+}
+
+function gp_signal () {
+	local f
+	local t
+	for f in "$1"/signal-[12][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]-[0-2][0-9][0-5][0-9][0-5][0-9]*.jpg; do
+		if [ -f "$f" ]; then
+			t=${f##*/}
+			t=${t:7:17}
+			t=${t//-/}
+			touch -t ${t:0:12}.${t:12:2} "$f"
+		fi
+	done
+}
+
+function gp_whatsapp () {
+	local f
+	local t
+	for f in "$1"/IMG-[12][0-9][0-9][0-9][01][0-9][0-3][0-9]-WA*.jpg; do
+		if [ -f "$f" ]; then
+			t=${f##*/}
+			t=${t:4:8}000000
+			touch -t ${t:0:12}.${t:12:2} "$f"
+		fi
+	done
+}
+
+function gp_datetime () {
+	local f
+	local t
+	for f in "$1"/[12][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]_[0-2][0-9]-[0-5][0-9]-[0-5][0-9]*.jpg; do
+		if [ -f "$f" ]; then
+			t=${f##*/}
+			t=${t/_/}
+			t=${t//-/}
+			touch -t ${t:0:12}.${t:12:2} "$f"
+		fi
+	done
+}
+
+function gp_dateonly () {
+	local f
+	local t
+	for f in "$1"/[12][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9].jpg; do
+		if [ -f "$f" ]; then
+			t=${f##*/}
+			t=${t//-/}
+			t=${t:0:8}000000
+			touch -t ${t:0:12}.${t:12:2} "$f"
+		fi
+	done
+}
+
+function adjustfiletime () {
+	[ -z "$1" ] && return
+	[ ! -d "$1" ] && return
+
+	gp_moto_img "$1"
+	gp_moto_vid "$1"
+	gp_lrm_export "$1"
+	gp_screenshot "$1"
+	gp_signal "$1"
+	gp_whatsapp "$1"
+	gp_datetime "$1"
+	gp_dateonly "$1"
+}
+
+echo
+echo "Backup of Google Photos for the last six months"
+echo "From Photo directory : $DRV"
+echo "To backup directory  : $BAK"
+
+[ ! -d "$DRV" ] && echo "Not found: \"$DRV\"" >&2 && exit 1
+[ ! -d "$BAK" ] && mkdir -p "$BAK"
+[ ! -d "$BAK" ] && echo "Could not create \"$BAK\"" >&2 && exit 2
+
+Y=$(date +%Y)
+M=$(date +%m)
+
+for (( i = 0; i < MONTHS; i++ )); do
+
+	echo
+	date -j "${M}150000$Y" +'%B %Y' | sed 's/./\t\u&/'
+	echo
+
+	SRC="$DRV/$Y/$M"
+	DST="$BAK/$Y/$M"
+
+	if [ -d "$SRC" ]; then
+		echo -n 'Correcting date/time of files in source directory ... '
+		xattr -rc "$SRC"
+		chmod 600 "$SRC"/*
+		adjustfiletime "$SRC"
+		echo 'done'
+	fi
+
+	[ ! -d "$DST" ] && mkdir -p "$DST"
+	if [ -d "$SRC" -a -d "$DST" ]; then
+		rsync -av --size-only "$SRC/" "$DST/"
+	fi
+
+	if [ -d "$DST" ]; then
+		echo -n 'Correcting date/time of files in destination directory ... '
+		xattr -rc "$DST"
+		chmod 600 "$DST"/*
+		adjustfiletime "$DST"
+		echo 'done'
+	fi
+
+	if [ "$M" = "01" ]; then
+		M=12
+		(( Y-- ))
+	else
+		M=${M/#0/}
+		(( M-- ))
+		[ "$M" -le "9" ] && M=0$M
+	fi
+
+done
+echo
+exit 0

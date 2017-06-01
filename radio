@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 #######################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
@@ -18,8 +17,7 @@
 #          2 : host down
 #######################################################################
 
-
-REMOTEHOST=${MPD_HOST:-"wood"}      # use MPD_HOST if set, or default
+REMOTEHOST=${MPD_HOST:-'black'}     # use MPD_HOST if set, or default
 REMOTEUSER=pi                       # ssh user name on remote
 REMOTEPORT=22000                    # ssh port on remote
 

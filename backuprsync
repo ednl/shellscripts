@@ -1,20 +1,45 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Name and mount point of backup disk
-DEST=/Volumes/MacOSX2
-if [ ! -d "$DEST" ]; then
-	echo "Backup disk not found at $DEST" 1>&2
-	exit 1
+# Names of backup disks
+DISK=( MacOSX2 Seagate3TB ZwartUSB )
+
+# Check which backup disk is mounted
+DEST=
+for V in "${DISK[@]}"; do
+	[ -d "/Volumes/$V" ] && { DEST="$V"; break; }
+done
+[ -z "$DEST" ] && { echo 'No backup disk found.' 1>&2; exit 1; }
+echo "Using backup disk: $DEST"
+DEST="/Volumes/$DEST"
+
+# Test if I am root
+U=$(whoami)
+if [[ "x${U}x" != "xrootx" ]]; then
+	N=$(basename "$0")
+	echo "This script needs to be run as root. Use: sudo $N" 1>&2
+	exit 2
 fi
 
 # Copy application directory to backup disk
 echo
 echo "   Applications:"
 echo
-sudo rsync -a --info=progress2,stats3 /Applications "$DEST"
+rsync -a --exclude='.DS_Store' --info=progress2,stats3 /Applications "$DEST"
 
-# Copy contents of user directory to backup disk
+# Copy System Library to backup disk
 echo
-echo "   User:"
+echo "   Library:"
 echo
-sudo rsync -a --info=progress2,stats3 "$HOME"/ "$DEST"
+rsync -a --exclude='.DS_Store' --info=progress2,stats3 /Library "$DEST"
+
+# Copy some root directories to backup disk
+echo
+echo "   Miscellaneous root dirs:"
+echo
+rsync -a --exclude='.DS_Store' --info=progress2,stats3 /bin /sbin /private /usr /opt "$DEST"
+
+# Copy contents of Users directory to backup disk
+echo
+echo "   Users:"
+echo
+rsync -a --exclude='.DS_Store' --info=progress2,stats3 /Users "$DEST"

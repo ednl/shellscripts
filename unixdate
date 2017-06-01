@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ -z "$1" ]; then
+	date "+%s"
+else
+	date -j -f "%s" "$1"
+fi

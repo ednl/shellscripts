@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+
+# Configuration
+HOST=dev
+LDIR='/Users/ewoud/Sites/vds/public_html'
+RDIR='/var/www/html/vds'
+
+# Local dir?
+[ ! -d "$LDIR" ] && echo "Local directory '$LDIR' not found." && exit 1
+[ ! -r "$LDIR" ] && echo "Local directory '$LDIR' not readable." && exit 2
+
+# Dependents
+BIN=$(which dig)
+[ ! -x "$BIN" ] && echo "Program 'dig' not found." && exit 3
+BIN=$(which ssh)
+[ ! -x "$BIN" ] && echo "Program 'ssh' not found." && exit 4
+BIN=$(which rsync)
+[ ! -x "$BIN" ] && echo "Program 'rsync' not found." && exit 5
+
+# Host reachable?
+SUFF=.fritz.box
+DNS=192.168.178.1
+ADDR=$(dig @$DNS $HOST$SUFF A +short)
+[ -z "$ADDR" ] && echo "Host '$HOST' not found." && exit 6
+
+FOUND=$(ssh -q -x -o 'CheckHostIP no' -o 'BatchMode yes' $HOST "ls -d '$RDIR' 2>/dev/null")
+[ "$FOUND" != "$RDIR" ] && echo "Remote directory '$RDIR' not found." && exit 7
+
+# Sync directories
+rsync -Cauvzb --exclude='.DS_Store' "$LDIR/" $HOST:"$RDIR"

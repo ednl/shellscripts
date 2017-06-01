@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 #######################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
@@ -19,7 +18,7 @@
 #######################################################################
 
 DIGBIN=/usr/bin/dig
-REMOTEHOST="wood blue white orange rpi32 cam"
+REMOTEHOST='home dev black cam dac2'
 DNSSERVER=192.168.178.1
 DNSSUFFIX=.fritz.box
 

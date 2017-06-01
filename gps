@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+identify -verbose "$1" | grep 'DateTime\|GPSL' | sed 's/    exif://'
