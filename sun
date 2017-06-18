@@ -7,10 +7,12 @@
 # Requires   : bash, bc
 # Location   : ~/bin/
 # Name       : sun
-# Version    : 1.1.0
-# Date       : 2016-10-08
+# Version    : 1.2.0
+# Date       : 2017-01-24
 # Purpose    : Calculate local sunrise and sunset times
-# Parameters : Optional location, default Utrecht NL
+# Parameters : Optional '-csv' to use comma instead of tab separator
+#              (tab is good for use with `set', comma for data logging etc)
+#              Optional location, default Utrecht NL
 #              Optional date as 'YYYY-MM-DD', default today
 # Settings   : LAT/LON = local coordinates
 #              Timezone offset is automatically obtained from `date'
@@ -70,7 +72,7 @@ else
 	fi
 	if $ERROR; then
 		APP=$(basename "$0")
-		echo "Wrong date format or invalid date. Usage: $APP [Location] [YYYY-MM-DD]" 1>&2
+		echo "Wrong date format or invalid date. Usage: $APP [-csv] [Location] [YYYY-MM-DD]" 1>&2
 		exit 1
 	fi
 fi
@@ -184,7 +186,7 @@ y = x - w / 15
 z = x + w / 15
 
 discard = printtime(y)
-print ","
+print "$SEP"
 discard = printtime(z)
 print "\n"
 InputFromHERE
