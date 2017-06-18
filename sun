@@ -14,10 +14,13 @@
 #              (tab is good for use with `set', comma for data logging etc)
 #              Optional location, default Utrecht NL
 #              Optional date as 'YYYY-MM-DD', default today
-# Settings   : LAT/LON = local coordinates
+# Settings   : LAT/LON = local earth coordinates
 #              Timezone offset is automatically obtained from `date'
 #              without regard for LAT/LON settings.
-# Output     : Local sunrise and sunset times as 'HMM,HMM'
+#              NOON = first approximation of local solar noon, 12:00:00 is
+#              good anywhere. In NL, 12:45:00 is better on standard time or
+#              13:45:00 on DST.
+# Output     : Local sunrise and sunset times as 'HMM	HMM'
 # Exit     0 : No errors
 #          1 : Supplied date wrong format or invalid
 # Credits    : Astronomical formulae from
