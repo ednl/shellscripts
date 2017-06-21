@@ -1,19 +1,42 @@
 #!/usr/bin/env bash
+###########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Raspberry Pi, Raspbian
+# Requires   : bash, streamripper, mpd, mpc
+# Location   : /usr/local/bin, ~/bin
+# Name       : rec
+# Version    : 1.0.0
+# Date       : 2017-01-01
+# Purpose    : Record audio streams playing with mpd ("radio recorder").
+# How to use : Call script to start recording the currently playing stream.
+#              Call again to stop recording and get a list of files.
+#              Probably only works cleanly when called as user pi from
+#              homedir of user pi, because of check for existing nohup.out
+#              and .cue files. I guess I should fix that..
+# Output     : Status message on stdout, .mp3 file saved in /home/pi
+###########################################################################
 
 # Get homedir of user pi
 DIR=$(cat /etc/passwd | grep -e '^pi:' | cut -d':' -f6)
 
-RIP=$(which streamripper)
-[ -z "$RIP" ] && echo "Install streamripper: sudo apt-get update && sudo apt-get install streamripper" && exit 1
+# Check for streamripper executable, used to record audio stream
+RIP=streamripper
+EXE=$(which $RIP)
+[ -z "$EXE" ] && echo "Install $RIP: sudo apt-get update && sudo apt-get install $RIP" && exit 1
 
-MPC=$(which mpc)
-[ -z "$MPC" ] && echo "Install mpc: sudo apt-get update && sudo apt-get install mpc" && exit 2
+# Check for mpc executable, used to get stream URL from mpd
+EXE=$(which mpc)
+[ -z "$EXE" ] && echo "Install mpc: sudo apt-get update && sudo apt-get install mpc" && exit 2
 
-PID=$(pgrep streamripper)
+# Check if streamripper already running
+PID=$(pgrep $RIP)
 if [ -z "$PID" ]; then
-	URL=$($MPC --format %file% | grep http)
+	# Not running. Check if mpd is playing
+	URL="$(mpc --format %file% | grep http)"
 	if [ -n "$URL" ]; then
-		REC=$(date '+%Y%m%d%H%M%S').mp3
+		# Record audio stream to .mp3 file
+		REC="$(date '+%Y%m%d%H%M%S').mp3"
 		nohup $RIP "$URL" -d "$DIR" -s -a "$REC" -A -T --quiet &
 		echo
 		echo "    Now recording $URL ..."
@@ -24,16 +47,15 @@ if [ -z "$PID" ]; then
 		echo
 	fi
 else
-	killall streamripper
-	[ -e "$DIR/nohup.out" ] && rm "$DIR/nohup.out"
-	for CUE in $DIR/*.cue; do
-		if [ -e "$CUE" ]; then
-			rm "$CUE"
-		fi
-	done
+	# Already recording, now stopping
+	killall $RIP
+	# Clean up output and .cue files
+	rm -f "$DIR/nohup.out" 2>/dev/null
+	rm -f "$DIR"/*.cue 2>/dev/null
+	# Overview
 	echo
 	echo "    Recording stopped. Today's recordings:"
 	echo
-	ls -l $DIR/$(date '+%Y%m%d')*.mp3
+	ls -l "$DIR/$(date '+%Y%m%d')"*.mp3
 	echo
 fi
