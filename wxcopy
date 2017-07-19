@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 
-#########################################################################
+#############################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
 # Platform   : Mac OS X
 # Requires   : bash
 # Location   : ~/bin/
 # Name       : wxcopy
-# Version    : 1.0.0
-# Date       : 2017-01-30
-# Purpose    : Copy new photos from camera to disk into daily subfolders.
-#              Files are sorted lexicographically (A to Z, 0 to 9) and
-#              the last ones on camera and disk are compared. So, not a
-#              full inventory of every file on camera or disk.
+# Version    : 1.0.1
+# Date       : 2017-07-19
+# Purpose    : Copy new photos from camera to disk into daily subfolders. Do
+#              the same for existing photos in the main folder on disk.
+#              Files are sorted lexicographically (A to Z, 0 to 9) and the
+#              last ones on camera and disk are compared. So, not necessarily
+#              a full inventory of every file on camera or disk.
 # Parameters : none
 # Settings   : DST = destination folder on disk
 #              VOL = source volume (camera memory card mounted on disk)
@@ -25,12 +26,17 @@
 #          5 : No JPEGs found on camera memory card
 #          6 : Photos on disk the same as on camera (lexicographically)
 #          7 : Photos on disk newer than on camera (lexicographically)
-#########################################################################
+#############################################################################
 
 DST=~/Pictures/Camera\ Sony\ WX220
-[ ! -d "$DST" ] && echo "Destination folder not found: \"$DST\"" 1>&2 && exit 1
-[ ! -w "$DST" ] && echo "Can't write to destination folder: \"$DST\"" 1>&2 && exit 2
+VOL=/Volumes/WX220
+SRC="$VOL/DCIM/100MSDCF"
 
+# Check destination folder
+[ ! -d "$DST" ] && { echo "Destination folder not found: \"$DST\"" 1>&2; exit 1; }
+[ ! -w "$DST" ] && { echo "Can't write to destination folder: \"$DST\"" 1>&2; exit 2; }
+
+# Clean up destination base folder
 echo -n 'Moving photos already on disk to daily subfolders ... '
 NDIR=0
 SUCC=0
@@ -57,19 +63,20 @@ echo 'Done.'
 (( SUCC > 0 )) && echo "    Photos moved to subfolders : $SUCC"
 (( FAIL > 0 )) && echo "    Could not determine photo date, left in base folder : $FAIL"
 
-VOL=/Volumes/WX220
-[ ! -d "$VOL" ] && echo 'Camera "WX220" not mounted.' 1>&2 && exit 3
+# Check source volume
+[ ! -d "$VOL" ] && { echo 'Camera "WX220" not mounted.' 1>&2; exit 3; }
 
-SRC="$VOL/DCIM/100MSDCF"
-[ ! -d "$VOL" ] && echo 'JPEG folder not found on camera.' 1>&2 && exit 4
+# Check source folder
+[ ! -d "$VOL" ] && { echo 'JPEG folder not found on camera.' 1>&2; exit 4; }
 
-TOT=$(ls "$SRC"/DSC*.JPG | wc -l | xargs)
-[ "$TOT" -eq 0 ] && echo 'No photos found on camera.' 1>&2 && exit 5
+# Check photos on camera
+TOT=$(ls "$SRC"/DSC*.JPG 2>/dev/null | wc -l | xargs)
+[ "$TOT" -eq 0 ] && { echo 'No photos found on camera.' 1>&2; exit 5; }
 echo "Number of photos on camera   : $TOT"
-CAM=$(ls "$SRC"/DSC*.JPG | tail -n 1 | xargs basename)
+CAM=$(ls "$SRC"/DSC*.JPG 2>/dev/null | tail -n 1 | xargs basename)
 echo "Newest photo found on camera : $CAM"
 
-# Newest photo in subfolder
+# Find newest photo by filename in destination subfolder
 REF=
 SUB=$(find -s "$DST" -depth 1 -type d | tail -n 1)
 [ -d "$SUB" ] && REF=$(ls "$SUB"/DSC*.JPG | tail -n 1)
@@ -79,9 +86,10 @@ SUB=$(find -s "$DST" -depth 1 -type d | tail -n 1)
 T=$(ls "$DST"/DSC*.JPG 2>/dev/null | tail -n 1)
 [ "$T" \> "$REF" ] && REF="$T"
 
+# Reference file
 [ -n "$REF" ] && echo "Newest photo found on disk   : $REF"
-[ "$CAM" = "$REF" ] && echo "Photos on disk are the same as on camera." && exit 6
-[ "$CAM" \< "$REF" ] && echo "Photos on disk are newer than on camera." && exit 7
+[ "$CAM" = "$REF" ] && { echo "Photos on disk are the same as on camera."; exit 6; }
+[ "$CAM" \< "$REF" ] && { echo "Photos on disk are newer than on camera."; exit 7; }
 
 echo -n "Copying photos from camera to disk ... "
 TRY=0
@@ -96,7 +104,7 @@ for FPATH in "$SRC"/DSC*.JPG; do
 	if [ -f "$FPATH" ]; then
 		FNAME=$(basename "$FPATH")
 		if [ "$FNAME" \> "$REF" ]; then
-			(( TRY++ ))
+			(( ++TRY ))
 			SUB=$(stat -q -f '%Sm' -t '%Y%m%d' "$FPATH")
 			LEN=$(expr "${SUB}" : '[0-9]*')
 			if [ "$LEN" -eq 8 ]; then

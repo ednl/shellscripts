@@ -1,0 +1,74 @@
+#!/usr/bin/env bash
+
+#############################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Mac OS X
+# Requires   : bash
+# Location   : ~/bin/
+# Name       : wxdir
+# Version    : 1.0.1
+# Date       : 2017-07-19
+# Purpose    : Correct illogical and impractical daily subfolder names of
+#              Sony sync tool from DD-MM-YY to YYYYMMDD.
+# Parameters : none
+# Settings   : WXDIR = main photo folder on disk
+#              CENTURY = which century to use for full date
+#############################################################################
+
+WXDIR=~/Pictures/Camera\ Sony\ WX220
+CENTURY=20
+
+echo -n "Renaming synced folders ... "
+N=0
+OK=0
+ERR=0
+find "$WXDIR" \
+	-mindepth 1 -maxdepth 1 \
+	-type d \
+	-name [0-9][0-9]-[0-9][0-9]-[0-9][0-9] | \
+while IFS= read -r OLD; do
+	if [ -d "$OLD" ]; then
+		(( ++N ))
+		DAY="$CENTURY${OLD:(-2)}${OLD:(-5):2}${OLD:(-8):2}"
+		NEW="$WXDIR/$DAY"
+		TRY=0
+		BASE="$NEW"
+		while [ -e "$NEW" -a $TRY -lt 9 ]; do
+			(( ++TRY ))
+			NEW="$BASE-$TRY"
+		done
+		if [ ! -e "$NEW" ]; then
+			if (( TRY > 0 )); then
+				echo -n "\n  Warning: duplicate folder name, using '$NEW' " 1>&2
+			fi
+			mv -f "$OLD" "$NEW" && (( ++OK ))
+			touch -t "${DAY}0000.00" "$NEW"
+		else
+			echo -n "\n  Fail: unable to rename '$OLD' " 1>&2
+			(( ++ERR ))
+		fi
+	fi
+done
+echo "done."
+(( N > 0 )) && echo "  Folders found as DD-MM-YY: $N"
+(( OK > 0 )) && echo "  Folders renamed to YYYYMMDD: $OK"
+(( ERR > 0 )) && echo "  Folders unable to rename: $ERR"
+
+echo -n "Correctly timestamping folders ... "
+N=0
+find "$WXDIR" \
+	-mindepth 1 -maxdepth 1 \
+	-type d \
+	-name [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] | \
+while IFS= read -r OLD; do
+	if [ -d "$OLD" ]; then
+		(( ++N ))
+	t=$(stat -q -f '%Sm' -t '%Y%m%d' "$WXDIR/$d")
+	[[ "$t" != "$d" ]] && touch -t ${d}0000.00 "$WXDIR/$d" && (( n++ ))
+done
+echo "done"
+(( N > 0 )) && echo "  Folders timestamped: $n"
+
+open "$WXDIR"
+exit 0
