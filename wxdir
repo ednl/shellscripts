@@ -45,30 +45,39 @@ while IFS= read -r OLD; do
 			mv -f "$OLD" "$NEW" && (( ++OK ))
 			touch -t "${DAY}0000.00" "$NEW"
 		else
-			echo -n "\n  Fail: unable to rename '$OLD' " 1>&2
+			echo -n "\n  Failed: unable to rename '$OLD' " 1>&2
 			(( ++ERR ))
 		fi
 	fi
 done
 echo "done."
-(( N > 0 )) && echo "  Folders found as DD-MM-YY: $N"
-(( OK > 0 )) && echo "  Folders renamed to YYYYMMDD: $OK"
+echo "  Folders found as DD-MM-YY: $N"
+echo "  Folders renamed to YYYYMMDD: $OK"
 (( ERR > 0 )) && echo "  Folders unable to rename: $ERR"
 
 echo -n "Correctly timestamping folders ... "
 N=0
+M=0
+OK=0
 find "$WXDIR" \
 	-mindepth 1 -maxdepth 1 \
 	-type d \
 	-name [0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9] | \
-while IFS= read -r OLD; do
-	if [ -d "$OLD" ]; then
+while IFS= read -r DIR; do
+	if [ -d "$DIR" ]; then
 		(( ++N ))
-	t=$(stat -q -f '%Sm' -t '%Y%m%d' "$WXDIR/$d")
-	[[ "$t" != "$d" ]] && touch -t ${d}0000.00 "$WXDIR/$d" && (( n++ ))
+		T1="${DIR:(-8)}"
+		T2=$(stat -q -f '%Sm' -t '%Y%m%d' "$DIR")
+		if [ "$T1" != "$T2" ]; then
+			(( ++M ))
+			touch -t "${T1}0000.00" "$DIR" && (( ++OK ))
+		fi
+	fi
 done
-echo "done"
-(( N > 0 )) && echo "  Folders timestamped: $n"
+echo "done."
+(( N > 0 )) && echo "  Folders found: $N"
+(( M > 0 )) && echo "  Wrong timestamp: $M"
+(( OK > 0 )) && echo "  Folders timestamped: $OK"
 
 open "$WXDIR"
 exit 0
