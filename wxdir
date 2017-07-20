@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#############################################################################
+#####################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
 # Platform   : Mac OS X
@@ -9,12 +9,12 @@
 # Name       : wxdir
 # Version    : 1.0.1
 # Date       : 2017-07-19
-# Purpose    : Correct illogical and impractical daily subfolder names of
-#              Sony sync tool from DD-MM-YY to YYYYMMDD.
+# Purpose    : Correct the impractical daily subfolder names
+#              of Sony sync tool from DD-MM-YY to YYYYMMDD.
 # Parameters : none
 # Settings   : WXDIR = main photo folder on disk
 #              CENTURY = which century to use for full date
-#############################################################################
+#####################################################################
 
 WXDIR=~/Pictures/Camera\ Sony\ WX220
 CENTURY=20
@@ -52,10 +52,10 @@ while IFS= read -r OLD; do
 done
 echo "done."
 echo "  Folders found as DD-MM-YY: $N"
-echo "  Folders renamed to YYYYMMDD: $OK"
-(( ERR > 0 )) && echo "  Folders unable to rename: $ERR"
+echo "  Renamed to YYYYMMDD: $OK"
+(( ERR > 0 )) && echo "  Unable to rename: $ERR"
 
-echo -n "Correctly timestamping folders ... "
+echo -n "Checking folder timestamps ... "
 N=0
 M=0
 OK=0
@@ -77,7 +77,7 @@ done
 echo "done."
 (( N > 0 )) && echo "  Folders found: $N"
 (( M > 0 )) && echo "  Wrong timestamp: $M"
-(( OK > 0 )) && echo "  Folders timestamped: $OK"
+(( OK > 0 )) && echo "  Corrected timestamp: $OK"
 
 open "$WXDIR"
 exit 0
