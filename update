@@ -1,5 +1,28 @@
 #!/usr/bin/env bash
 
+#############################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Raspbian
+# Requires   : bash, pgrep, apt-get, rpi-update
+# Location   : /usr/local/bin/
+# Name       : update
+# Version    : 1.0.0
+# Date       : 2017-07-21
+# Purpose    : Easy updating on Raspberry Pi.
+# Parameters : -f = also update firmware (using rpi-update)
+# Settings   : none
+# Exit     0 : No script errors
+#          1 : rpi-update not found
+#          2 : wrong argument(s)
+#          3 : no root privileges
+#          4 : failed to retrieve updates (apt-get update)
+#          5 : failed to install updates (apt-get upgrade)
+#          6 : failed to install updates (apt-get dist-upgrade)
+#          7 : failed to uninstall unneeded packages
+#          8 : failed to install firmware update (rpi-update)
+#############################################################################
+
 FIRMWARE=
 if [ -n "$1" ]; then
 	if [ "$1" = "-f" ]; then
