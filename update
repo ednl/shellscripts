@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+
+FIRMWARE=
+if [ -n "$1" ]; then
+	if [ "$1" = "-f" ]; then
+		RPIUPDATE=$(which rpi-update)
+		if [ -n "$RPIUPDATE" ]; then
+			FIRMWARE=1
+		else
+			echo "Error: firmware update tool rpi-update not found." >&2
+			exit 1
+		fi
+	else
+		echo "Error: wrong argument. Use -f to include firmware update & reboot." >&2
+		exit 2
+	fi
+fi
+
+ME=$(whoami)
+if [[ "$ME" != "root" ]]; then
+	echo "Error: use sudo to execute this script." >&2
+	exit 3
+fi
+
+echo
+echo "  Stopping camera ..."
+echo
+for PNAME in webcam raspistill raspivid raspiyuv raspividyuv; do
+	pgrep -f $PNAME &>/dev/null && { echo -n "$PNAME ... "; pkill -f $PNAME; sleep 1; echo 'done'; }
+done
+
+echo
+echo "  Getting new updates ..."
+echo
+apt-get clean
+if apt-get update; then
+
+	echo
+	echo "  Installing available updates ('upgrade') ..."
+	echo
+	if apt-get -y upgrade; then
+
+		echo
+		echo "  Installing available updates ('dist-upgrade') ..."
+		echo
+		if apt-get -y dist-upgrade; then
+
+			echo
+			echo "  Removing unused packages ..."
+			echo
+			if apt-get -y --purge autoremove; then
+
+				if [ $FIRMWARE ]; then
+
+					echo
+					echo "  Downloading and installing firmware update ..."
+					echo
+					if rpi-update; then
+
+						echo
+						echo "  Firmware update successful, now rebooting."
+						echo
+						reboot
+
+					else
+
+						echo
+						echo -n "  "
+						echo "Firmware update unsuccessful. Manual reboot may still be required." >&2
+						echo
+						exit 8
+					fi
+
+				else
+
+					echo
+					echo "  Done."
+					echo
+					exit 0
+
+				fi
+
+			else
+
+				echo
+				echo -n "  "
+				echo "Update successful but failed removing unneeded packages." >&2
+				if [ $FIRMWARE ]; then
+					echo -n "  "
+					echo "Firmware update not performed." >&2
+				fi
+				echo
+				exit 7
+
+			fi
+
+		else
+
+			echo
+			echo -n "  "
+			echo "Failed installing updates via 'dist-upgrade'. Update probably OK." >&2
+			if [ $FIRMWARE ]; then
+				echo -n "  "
+				echo "Firmware update not performed." >&2
+			fi
+			echo
+			exit 6
+
+		fi
+
+	else
+
+		echo
+		echo -n "  "
+		echo "Failed installing updates. Update incomplete." >&2
+		echo
+		exit 5
+
+	fi
+
+else
+
+	echo
+	echo -n "  "
+	echo "Failed getting updates. No update performed." >&2
+	echo
+	exit 4
+
+fi
