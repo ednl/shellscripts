@@ -5,8 +5,9 @@ DISK=( MacOSX2 Seagate3TB ZwartUSB )
 
 # Check which backup disk is mounted
 DEST=
-for V in "${DISK[@]}"; do
-	[ -d "/Volumes/$V" ] && { DEST="$V"; break; }
+for VOL in "${DISK[@]}"; do
+	FOUND=$(mount | grep -c " on /Volumes/$VOL (")
+	[ $FOUND -eq 1 ] && { DEST="$VOL"; break; }
 done
 [ -z "$DEST" ] && { echo 'No backup disk found.' 1>&2; exit 1; }
 echo "Using backup disk: $DEST"
@@ -24,22 +25,22 @@ fi
 echo
 echo "   Applications:"
 echo
-rsync -a --exclude='.DS_Store' --info=progress2,stats3 /Applications "$DEST"
+rsync -au --exclude='.DS_Store' --info=progress2,stats3 /Applications "$DEST"
 
 # Copy System Library to backup disk
 echo
 echo "   Library:"
 echo
-rsync -a --exclude='.DS_Store' --info=progress2,stats3 /Library "$DEST"
+rsync -au --exclude='Caches' --exclude='.DS_Store' --info=progress2,stats3 /Library "$DEST"
 
 # Copy some root directories to backup disk
 echo
 echo "   Miscellaneous root dirs:"
 echo
-rsync -a --exclude='.DS_Store' --info=progress2,stats3 /bin /sbin /private /usr /opt "$DEST"
+rsync -au --exclude='.DS_Store' --info=progress2,stats3 /bin /sbin /private /usr /opt "$DEST"
 
 # Copy contents of Users directory to backup disk
 echo
 echo "   Users:"
 echo
-rsync -a --exclude='.DS_Store' --info=progress2,stats3 /Users "$DEST"
+rsync -au --exclude='Caches' --exclude='.DS_Store' --info=progress2,stats3 /Users "$DEST"
