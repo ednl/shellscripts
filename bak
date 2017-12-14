@@ -11,14 +11,17 @@ for VOL in "${DISK[@]}"; do
 done
 [ -z "$DEST" ] && { echo 'No backup disk found.' 1>&2; exit 1; }
 echo "Using backup disk: $DEST"
+
+# Double check if directory actually exists
 DEST="/Volumes/$DEST"
+[ ! -d "$DEST" ] && { echo "Directory not found: $DEST" 1>&2; exit 2; }
 
 # Test if I am root
 U=$(whoami)
 if [[ "x${U}x" != "xrootx" ]]; then
 	N=$(basename "$0")
 	echo "This script needs to be run as root. Use: sudo $N" 1>&2
-	exit 2
+	exit 3
 fi
 
 # Copy application directory to backup disk
