@@ -24,6 +24,7 @@ LOCALNAME="Google Foto's"
 DRV=~/"Google Drive/$LOCALNAME"
 BAK=~/"Pictures/$LOCALNAME"
 
+# Correct timestamps of Motorola Moto G3 photos
 function gp_moto_img () {
 	local f
 	local t
@@ -32,11 +33,13 @@ function gp_moto_img () {
 			t=${f##*/}
 			t=${t:4:15}
 			t=${t/_/}
-			touch -t ${t:0:12}.${t:12:2} "$f"
+			DAY=${t:0:8}
+			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
 
+# Correct timestamps of Motorola Moto G3 videos
 function gp_moto_vid () {
 	local f
 	local t
@@ -45,11 +48,13 @@ function gp_moto_vid () {
 			t=${f##*/}
 			t=${t:4:15}
 			t=${t/_/}
-			touch -t ${t:0:12}.${t:12:2} "$f"
+			DAY=${t:0:8}
+            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
 
+# Correct timestamps of Adobe Lightroom Mobile exports
 function gp_lrm_export () {
 	local f
 	local t
@@ -58,11 +63,13 @@ function gp_lrm_export () {
 			t=${f##*/}
 			t=${t:11:15}
 			t=${t/_/}
-			touch -t ${t:0:12}.${t:12:2} "$f"
+			DAY=${t:0:8}
+            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
 
+# Correct timestamps of Android screenshots
 function gp_screenshot () {
 	local f
 	local t
@@ -71,11 +78,13 @@ function gp_screenshot () {
 			t=${f##*/}
 			t=${t:11:15}
 			t=${t/-/}
-			touch -t ${t:0:12}.${t:12:2} "$f"
+			DAY=${t:0:8}
+            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
 
+# Correct timestamps of JPEGs from Signal
 function gp_signal () {
 	local f
 	local t
@@ -84,11 +93,13 @@ function gp_signal () {
 			t=${f##*/}
 			t=${t:7:17}
 			t=${t//-/}
-			touch -t ${t:0:12}.${t:12:2} "$f"
+			DAY=${t:0:8}
+            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
 
+# Correct timestamps of JPEGs from WhatsApp
 function gp_whatsapp () {
 	local f
 	local t
@@ -96,11 +107,13 @@ function gp_whatsapp () {
 		if [ -f "$f" ]; then
 			t=${f##*/}
 			t=${t:4:8}000000
-			touch -t ${t:0:12}.${t:12:2} "$f"
+			DAY=${t:0:8}
+            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
 
+# Correct timestamps of JPEGs with date/time filename
 function gp_datetime () {
 	local f
 	local t
@@ -109,11 +122,13 @@ function gp_datetime () {
 			t=${f##*/}
 			t=${t/_/}
 			t=${t//-/}
-			touch -t ${t:0:12}.${t:12:2} "$f"
+			DAY=${t:0:8}
+            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
 
+# Correct timestamps of JPEGs with date-only filename
 function gp_dateonly () {
 	local f
 	local t
@@ -122,11 +137,13 @@ function gp_dateonly () {
 			t=${f##*/}
 			t=${t//-/}
 			t=${t:0:8}000000
-			touch -t ${t:0:12}.${t:12:2} "$f"
+			DAY=${t:0:8}
+            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
 
+# Correct timestamps of known files
 function adjustfiletime () {
 	[ -z "$1" ] && return
 	[ ! -d "$1" ] && return
@@ -146,14 +163,15 @@ echo "Backup of Google Photos for the last six months"
 echo "From Photo directory : $DRV"
 echo "To backup directory  : $BAK"
 
-[ ! -d "$DRV" ] && echo "Not found: \"$DRV\"" >&2 && exit 1
+[ ! -d "$DRV" ] && echo "Folder not found: \"$DRV\"" >&2 && exit 1
 [ ! -d "$BAK" ] && mkdir -p "$BAK"
-[ ! -d "$BAK" ] && echo "Could not create \"$BAK\"" >&2 && exit 2
+[ ! -d "$BAK" ] && echo "Could not create folder \"$BAK\"" >&2 && exit 2
 
 Y=$(date +%Y)
 M=$(date +%m)
+TODAY=$(date +%Y%m%d)
 
-for (( i = 0; i < MONTHS; i++ )); do
+for (( i = 0; i < MONTHS; ++i )); do
 
 	echo
 	date -j "${M}150000$Y" +'%B %Y' | sed 's/./\t\u&/'
@@ -185,11 +203,15 @@ for (( i = 0; i < MONTHS; i++ )); do
 
 	if [ "$M" = "01" ]; then
 		M=12
-		(( Y-- ))
+		(( --Y ))
 	else
 		M=${M/#0/}
-		(( M-- ))
-		[ "$M" -le "9" ] && M=0$M
+		(( --M ))
+		(( M < 10 )) && M=0$M
+	fi
+
+	if (( i == 0 )); then
+		open "$DST"
 	fi
 
 done
