@@ -54,6 +54,21 @@ function gp_moto_vid () {
 	done
 }
 
+# Correct timestamps of Samsung Galaxy photos and videos
+function gp_sammy_cam () {
+	local f
+	local t
+	for f in "$1"/[12][0-9][0-9][0-9][01][0-9][0-3][0-9]_[0-2][0-9][0-5][0-9][0-5][0-9]*.[jm]p[g4]; do
+		if [ -f "$f" ]; then
+			t=${f##*/}		# delete everything until last slash (much faster than `basename`)
+			t=${t:0:15}		# take first 15 chars (full date, underscore, time incl. seconds)
+			t=${t/_/}		# remove underscore
+			DAY=${t:0:8}	# full date part of the name
+			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
+		fi
+	done
+}
+
 # Correct timestamps of Adobe Lightroom Mobile exports
 function gp_lrm_export () {
 	local f
@@ -150,6 +165,7 @@ function adjustfiletime () {
 
 	gp_moto_img "$1"
 	gp_moto_vid "$1"
+	gp_sammy_cam "$1"
 	gp_lrm_export "$1"
 	gp_screenshot "$1"
 	gp_signal "$1"
