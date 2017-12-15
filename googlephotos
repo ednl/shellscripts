@@ -7,9 +7,9 @@
 # Requires   : Bash, xattr
 # Location   : ~/bin/
 # Name       : googlephotos
-# Version    : 1.1.0
+# Version    : 1.1.3
 # Date       : 2017-12-15
-# Purpose    : Align timestamps with file names for Moto G3 photos and
+# Purpose    : Align timestamps with file names for phone photos and
 #              other image files in Google Drive. Also set file mode to
 #              0600 and remove macOS extended attributes. Then copy
 #              all files and subdirectories to a backup directory.
@@ -63,7 +63,7 @@ function gp_sammy_cam () {
 			t=${f##*/}		# delete everything until last slash (much faster than `basename`)
 			t=${t:0:15}		# take first 15 chars (full date, underscore, time incl. seconds)
 			t=${t/_/}		# remove underscore
-			DAY=${t:0:8}	# full date part of the name
+			DAY=${t:0:8}		# full date part of the name
 			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
