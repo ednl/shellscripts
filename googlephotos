@@ -49,7 +49,7 @@ function gp_moto_vid () {
 			t=${t:4:15}
 			t=${t/_/}
 			DAY=${t:0:8}
-            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
+			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
@@ -64,7 +64,7 @@ function gp_lrm_export () {
 			t=${t:11:15}
 			t=${t/_/}
 			DAY=${t:0:8}
-            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
+			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
@@ -79,7 +79,7 @@ function gp_screenshot () {
 			t=${t:11:15}
 			t=${t/-/}
 			DAY=${t:0:8}
-            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
+			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
@@ -94,7 +94,7 @@ function gp_signal () {
 			t=${t:7:17}
 			t=${t//-/}
 			DAY=${t:0:8}
-            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
+			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
@@ -108,7 +108,7 @@ function gp_whatsapp () {
 			t=${f##*/}
 			t=${t:4:8}000000
 			DAY=${t:0:8}
-            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
+			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
@@ -123,7 +123,7 @@ function gp_datetime () {
 			t=${t/_/}
 			t=${t//-/}
 			DAY=${t:0:8}
-            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
+			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
@@ -138,7 +138,7 @@ function gp_dateonly () {
 			t=${t//-/}
 			t=${t:0:8}000000
 			DAY=${t:0:8}
-            (( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
+			(( DAY <= TODAY )) && touch -t ${t:0:12}.${t:12:2} "$f"
 		fi
 	done
 }
@@ -215,5 +215,6 @@ for (( i = 0; i < MONTHS; ++i )); do
 	fi
 
 done
+
 echo
 exit 0
