@@ -7,8 +7,8 @@
 # Requires   : Bash, xattr
 # Location   : ~/bin/
 # Name       : googlephotos
-# Version    : 1.0.0
-# Date       : 2017-05-12
+# Version    : 1.1.0
+# Date       : 2017-12-15
 # Purpose    : Align timestamps with file names for Moto G3 photos and
 #              other image files in Google Drive. Also set file mode to
 #              0600 and remove macOS extended attributes. Then copy
