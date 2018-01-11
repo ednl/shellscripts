@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# Copy/redirect output to stderr
+function StdErr () {
+	cat - 1>&2
+}
+
+# Version info which is always available
+function KernelInfo () {
+	echo
+	vcgencmd version
+	uname -a
+}
+
+OLD=$(cat "/boot/.firmware_revision")
+NEW=$(curl -s "https://api.github.com/repos/Hexxeh/rpi-firmware/git/refs/heads/master" \
+	| awk '{ if ($1 == "\"sha\":") { print substr($2, 2, 40) } }')
+
+if [ -z "$NEW" ]; then
+	echo "Can't download firmware revision." | StdErr
+	KernelInfo | StdErr
+	exit 1
+elif [ "$NEW" = "$OLD" ]; then
+	echo "Firmware is up to date." | StdErr
+	echo "Version: ${OLD}" | StdErr
+	echo "         https://github.com/Hexxeh/rpi-firmware/commit/${OLD:0:7}" | StdErr
+	KernelInfo | StdErr
+	exit 2
+elif [ -z "$OLD" ]; then
+	echo "Firmware never updated. Update available."
+else
+	echo "Firmware update available."
+	echo "Current: ${OLD}"
+	echo "         https://github.com/Hexxeh/rpi-firmware/commit/${OLD:0:7}"
+fi
+
+echo "Update : ${NEW}"
+echo "         https://github.com/Hexxeh/rpi-firmware/commit/${NEW:0:7}"
+KernelInfo
+exit 0
