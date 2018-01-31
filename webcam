@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+###########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Raspbian
+# Requires   : bash, ssh, scp
+#              SSH key with access to storage (and/or web) server
+#              Raspberry Pi camera
+#              `raspistill' provided by Raspbian distribution
+#              `sun' script to calculate local sunrise & sunset times
+#              `timedelta' script to calculate twilight time difference
+# Location   : /usr/local/bin/
+# Invoke as  : As a make-shift service in /etc/rc.local: webcam &
+# Name       : webcam
+# Version    : 1.0.0
+# Date       : 2018-01-31
+# Purpose    : Take picture with Raspberry Pi camera, upload to server
+# Settings   : TWILIGHT = number of minutes before sunrise and after sunset
+#                when there is enough light for camera daylight settings
+#              MEM = where to store local copy of new webcam image
+#              SRV = user and server name for remote webcam image
+#              DIR = remote server directory for webcam image
+#              ID = location of SSH key with server access
+###########################################################################
+
+TWILIGHT=35                 # useful twilight duration in minutes
+MEM='/run/shm/cam.jpg'      # store image not on card but in memory
+SRV='username@servername'   # user and server with ssh (scp) access
+DIR='serverdir/'            # remote server directory for images
+ID='/home/pi/.ssh/id_rsa'   # SSH key with access to server
+
+# Invalid time to force sunrise/set calc on script startup
+PREV=2500
+
+# Continuous loop
+while true; do
+
+	# Current time as 24h HMM without zeros in front
+	CLOCK=$(date +'%-H%M' | sed -r 's/^0*([0-9])/\1/')
+	if (( CLOCK < PREV )); then
+
+		# Calculate new sunrise and sunset times for every new day
+		set $(sun)
+		DAWN=$(timedelta $1 -$TWILIGHT)
+		DUSK=$(timedelta $2 +$TWILIGHT)
+
+		# Update local external IP address if it is not fixed
+		# in order to know where to connect to for maintenance
+		#ssh -q -x -p 22 \
+		#	-o "CheckHostIP no" \
+		#	-o "BatchMode yes" \
+		#	-o "ServerAliveInterval 10" \
+		#	-o "ServerAliveCountMax 1" \
+		#	-i "$ID" "$SRV" \
+		#	"echo \${SSH_CLIENT%% *} > ${DIR}ip.txt && chmod 644 ${DIR}ip.txt"
+
+	fi
+	# Save current time for the next loop
+	PREV=$CLOCK
+
+	# Take picture
+	if (( CLOCK >= DAWN && CLOCK <= DUSK )); then
+		# Daylight settings
+		raspistill \
+			-n -w 1024 -h 768 -q 80 -st \
+			-t 2000 \
+			-ae 16,0x00,0x8080ff -a 1028 -a '%F %T' \
+			-o "$MEM"
+	else
+		# Night time settings
+		raspistill \
+			-n -w 1024 -h 768 -q 80 -st \
+			-t 1 -ss 2000000 -drc high \
+			-ae 16,0xff,0x808000 -a 1028 -a '%F %T' \
+			-o "$MEM"
+	fi
+
+	# Upload locally saved image to server
+	scp -q -B -p -P 22 \
+		-o "CheckHostIP no" \
+		-i "$ID" \
+		"$MEM" "$SRV:$DIR"
+
+done
