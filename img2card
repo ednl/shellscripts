@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 #########################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
@@ -6,37 +7,38 @@
 # Requires   : bash, diskutil, dd
 # Location   : ~/bin/
 # Name       : img2card
-# Version    : 1.1.0
-# Date       : 2017-02-10
+# Version    : 2.0.0
+# Date       : 2018-02-09
 # Purpose    : Write disk image to SD card
 # Parameters : Optional [disk image file name]
 # Settings   : SEARCHDIR = where to look for image files (~/Downloads)
 #            : SEARCHPAT = file name pattern of image files (*.img)
+#            : WPACONF = Wi-Fi settings file (~/.ssh/wpa_supplicant.conf)
 # Exit     0 : No script errors, image written, card ejected
-#          1 : Not invoked as root
-#          2 : No argument and no image found
-#          3 : Argument or image not a file
-#          4 : Argument or image not readable
-#          5 : Argument or image not named *.img
-#          6 : SD card not found
-#          7 : SD card not unmounted
-#          8 : Image not written
+#          1 : No argument and no image found
+#          2 : Argument or image not a file
+#          3 : Argument or image not readable
+#          4 : Argument or image not named *.img
+#          5 : SD card not found
+#          6 : SD card not unmounted
+#          7 : Image not written
+#          8 : Wi-Fi settings not copied
 #          9 : SD card not ejected
 #########################################################################
 
+# Settings
 SEARCHDIR=~/Downloads
 SEARCHPAT='*.img'
-
-SCRIPT=$(basename "$0")
-
-# Must be root to use dd
-USER=$(whoami)
-[ "$USER" != "root" ] && echo "Must be root to run this script. Usage: sudo ${SCRIPT} [filename]" 1>&2 && exit 1
+WPACONF=~/.ssh/wpa_supplicant.conf
 
 # Find image file
 if [ -z "$1" ]; then
 	N=$(ls -d "$SEARCHDIR"/$SEARCHPAT 2> /dev/null | wc -l | xargs)
-	[ "$N" -eq 0 ] && echo "No disk image found in '$SEARCHDIR'. Usage: sudo ${SCRIPT} [filename]" 1>&2 && exit 2
+	if [ "$N" -eq 0 ]; then
+		SCRIPT=$(basename "$0")
+		echo "No disk image found in '$SEARCHDIR'. Usage: ${SCRIPT} [.img file]" 1>&2
+		exit 1
+	fi
 	if [ "$N" -eq 1 ]; then
 		IMG=$(ls -d "$SEARCHDIR"/$SEARCHPAT)
 		F=$(basename "$IMG")
@@ -70,21 +72,33 @@ else
 fi
 
 # Check argument
-[ ! -f "$IMG" ] && echo "Not a regular file: $IMG" 1>&2 && exit 3
-[ ! -r "$IMG" ] && echo "Not readable: $IMG" 1>&2 && exit 4
+if [ ! -f "$IMG" ]; then
+	echo "Not a regular file: $IMG" 1>&2
+	exit 2
+fi
+if [ ! -r "$IMG" ]; then
+	echo "Not readable: $IMG" 1>&2
+	exit 3
+fi
 EXT=$(echo ${IMG:(-4)} | tr '[:upper:]' '[:lower:]')
-[ "$EXT" != ".img" ] && echo "File name extension '$EXT' should be: .img" 1>&2 && exit 5
+if [ "$EXT" != ".img" ]; then
+	echo "File name extension '$EXT' should be: .img" 1>&2
+	exit 4
+fi
 
 # Get SD card device name
 echo -n "Searching for SD card ... "
 for SDCARD in /dev/disk?; do
-	FOUND=$(diskutil info $SDCARD | grep -c 'SD/MMC')
+	FOUND=$(diskutil info $SDCARD | grep -cE 'SD/MMC|SDXC')
 	[ "$FOUND" -gt 0 ] && break
 done
-[ "$FOUND" -eq 0 ] && echo 'Not found.' 1>&2 && exit 6
+if [ "$FOUND" -eq 0 ]; then
+	echo 'Not found.' 1>&2
+	exit 5
+fi
 
 # Let the user check!
-echo "Found as device '$SDCARD'. Please double check:"
+echo "Found as device '$SDCARD'. Please double check! This memory card will be deleted:"
 echo
 diskutil list $SDCARD
 echo
@@ -95,24 +109,67 @@ read -n 1 -p "Write disk image to '$SDCARD', destroying all its data? (y/N) " CH
 [ -z "$CH" ] && exit 0
 echo
 CH=$(echo $CH | tr '[:lower:]' '[:upper:]')
-[ "$CH" != "Y" ] && exit 0
+if [ "$CH" != "Y" ]; then
+	echo "Aborted."
+	exit 0
+fi
+RAW=/dev/rdisk${SDCARD:9}
 
 # Unmount mounted SD card volumes
-for VOL in $(mount | grep -oP "${SDCARD}s\d+"); do
-	echo -n "Unmounting $VOL ... "
-	diskutil unmount $VOL &> /dev/null
-	[ $? -ne 0 ] && echo "Failed." && exit 7
-	echo "Done."
-done
+echo -n "Unmounting $SDCARD ... "
+diskutil unmountdisk $SDCARD &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed."
+	exit 6
+fi
+echo "Done."
 
 # Write disk image file to SD card raw device
-echo -n "Writing disk image to SD card ... "
-dd bs=1m if="$IMG" of=/dev/rdisk${SDCARD:9} &> /dev/null
-[ $? -ne 0 ] && echo "Failed." && exit 8
+echo -n "This will require your password. Writing disk image to SD card ... "
+sudo dd bs=1m if="$IMG" of=$RAW &> /dev/null
+if [ $? -ne 0 ]; then
+	echo "Failed."
+	exit 7
+fi
 echo "Done."
+
+# Prepare image for Wi-Fi connection and SSH access
+echo -n "Preparing image for Wi-Fi connection and SSH access ... "
+VOL='/Volumes/boot/'
+TRY=3
+while (( TRY > 0 )); do
+	sleep 1
+	(( --TRY ))
+	[ -e "$VOL" ] && TRY=0
+done
+if [ -e "$VOL" ]; then
+	if [ -d "$VOL" -a -r "$VOL" -a -w "$VOL" ]; then
+		touch "${VOL}ssh"
+		[ ! -f "${VOL}ssh" ] && echo "SSH access not configured."
+		# WPACONF value set at top
+		if [ -f "$WPACONF" -a -r "$WPACONF" ]; then
+			cp "$WPACONF" "$VOL"
+			if [ $? -eq 0 ]; then
+				echo "Done."
+			else
+				echo "Wi-Fi configuration not copied."
+				exit 8
+			fi
+		else
+			echo "Wi-Fi configuration not found at: $WPACONF"
+			exit 8
+		fi
+	else
+		echo "Volume not mounted correctly."
+		exit 8
+	fi
+else
+	echo "Volume not found."
+	exit 8
+fi
 
 # Eject SD card raw device
 echo -n "Ejecting SD card ... "
-diskutil eject /dev/rdisk${SDCARD:9} &> /dev/null
+diskutil eject $RAW &> /dev/null
 [ $? -ne 0 ] && echo "Failed." && exit 9
 echo "Done."
