@@ -126,7 +126,7 @@ echo "Done."
 
 # Write disk image file to SD card raw device
 echo -n "This will require your password. Writing disk image to SD card ... "
-sudo dd bs=1m if="$IMG" of=$RAW &> /dev/null
+sudo dd bs=1m conv=sync if="$IMG" of=$RAW &> /dev/null
 if [ $? -ne 0 ]; then
 	echo "Failed."
 	exit 7
