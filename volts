@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Raspberry Pi
+# Requires   : Raspbian, bash, vcgencmd
+# Location   : ~/bin/
+# Name       : volts
+# Version    : 1.0.0
+# Date       : 2018-06-21
+# Purpose    : Print formatted list of voltage measurements on the RPi
+# Parameters : none
+# Settings   : none
+# Exit       : no exit codes used
+#######################################################################
+
+# Look up decimal separator for given locale
+function GetSep() {
+	[ -z "$1" ] && return 1
+	DEFFILE="/usr/share/i18n/locales/$1"
+	[ ! -f "$DEFFILE" ] && return 2
+	UNICODE=$(cat "$DEFFILE" | grep ^decimal_point | cut -d'<' -f2 | cut -d'>' -f1)
+	echo -ne "\\$UNICODE"
+	return 0
+}
+
+# Determine POSIX decimal separator which 'vcgencmd' uses in output
+# TODO: check error code return
+DOT=$(GetSep 'POSIX')
+
+# Determine current locale decimal separator which 'printf' expects as input
+LCN="$LC_ALL"
+[ -z "$LCN" ] && LCN="$LC_NUMERIC"
+[ -z "$LCN" ] && LCN=$(locale | grep ^LC_NUMERIC | cut -d= -f2 | sed -e 's/"//g')
+# Use only the part of LCN before the dot
+# TODO: check error code return
+SEP=$(GetSep "${LCN%%.*}")
+[ -z "$SEP" ] && SEP=$DOT
+
+# Measure voltage at different points
+for PROBE in core sdram_c sdram_i sdram_p; do
+
+	# Get measurement, select part after '='
+	VOLT=$(vcgencmd measure_volts $PROBE | cut -d= -f2)
+
+	# Remove trailing 'V', result is float #.#####
+	VOLT=${VOLT%V}
+
+	# Replace decimal separator
+	VOLT=${VOLT/$DOT/$SEP}
+
+	# Formatted output
+	printf '%-8s:%6.3f\n' "$PROBE" "$VOLT"
+
+done
+exit 0
