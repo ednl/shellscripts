@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# Ref.: https://elinux.org/RPi_HardwareHistory#Board_Revision_History
+
+id=$(awk '/^Revision/ {sub("^1000", "", $3); print $3}' /proc/cpuinfo)
+s=$(awk '/^Serial/ {print $3}' /proc/cpuinfo)
+c=$(cat /proc/cpuinfo | grep ^processor | wc -l)
+
+m1=$(vcgencmd get_mem arm | grep -oP '\d+')
+m2=$(vcgencmd get_mem gpu | grep -oP '\d+')
+(( m0 = m1 + m2 ))
+
+f1=$(vcgencmd get_config arm_freq | grep -oP '\d+')
+f2=$(vcgencmd get_config core_freq | grep -oP '\d+')
+f3=$(vcgencmd get_config gpu_freq | grep -oP '\d+')
+f4=$(vcgencmd get_config sdram_freq | grep -oP '\d+')
+
+case "$id" in
+	0007 ) n='1A'; b='2.0'; d='Q1 2013'; p='Egoman';;
+	0008 ) n='1A'; b='2.0'; d='Q1 2013'; p='Sony';;
+	0009 ) n='1A'; b='2.0'; d='Q1 2013'; p='Qisda';;
+
+	0012   ) n='1A+'; b='1.1'; d='Q4 2014'  ; p='Sony';;
+	0015   ) n='1A+'; b='1.1'; d='(unknown)'; p='Embest';;
+	900021 ) n='1A+'; b='1.1'; d='Q3 2016'  ; p='Sony';;
+
+	Beta ) n='1B'; b='?'  ; d='Q1 2012'; p='?';;
+	0002 ) n='1B'; b='1.0'; d='Q1 2012'; p='?';;
+	0003 ) n='1B'; b='1.0'; d='Q3 2012'; p='?';;
+	0004 ) n='1B'; b='2.0'; d='Q3 2012'; p='Sony';;
+	0005 ) n='1B'; b='2.0'; d='Q4 2012'; p='Qisda';;
+	0006 ) n='1B'; b='2.0'; d='Q4 2012'; p='Egoman';;
+	000d ) n='1B'; b='2.0'; d='Q4 2012'; p='Egoman';;
+	000e ) n='1B'; b='2.0'; d='Q4 2012'; p='Sony';;
+	000f ) n='1B'; b='2.0'; d='Q4 2012'; p='Qisda';;
+
+	0010   ) n='1B+'; b='1.0'; d='Q3 2014'; p='Sony';;
+	0013   ) n='1B+'; b='1.2'; d='Q1 2015'; p='Embest';;
+	900032 ) n='1B+'; b='1.2'; d='Q2 2016'; p='Sony';;
+
+	a01040 ) n='2B'; b='1.0'; d='Q1 2015'; p='Sony';;
+	a01041 ) n='2B'; b='1.1'; d='Q1 2015'; p='Sony';;
+	a21041 ) n='2B'; b='1.1'; d='Q1 2015'; p='Embest';;
+	a22042 ) n='2B'; b='1.2'; d='Q1 2015'; p='Embest';;
+
+	0011 ) n='CM1'; b='1.0'; d='Q2 2014'; p='Sony';;
+	0014 ) n='CM1'; b='1.0'; d='Q2 2014'; p='Embest';;
+
+	a020a0 ) n='CM3'; b='1.0'; d='Q1 2017'; p='Sony';;
+
+	900092 ) n='Zero'; b='1.2'; d='Q4 2015'; p='Sony';;
+	900093 ) n='Zero'; b='1.3'; d='Q2 2016'; p='Sony';;
+	920093 ) n='Zero'; b='1.3'; d='Q4 2016'; p='Embest';;
+
+	9000c1 ) n='Zero W'; b='1.1'; d='Q1 2017'; p='Sony';;
+
+	a02082 ) n='3B'; b='1.2'; d='Q1 2016'; p='Sony';;
+	a22082 ) n='3B'; b='1.2'; d='Q1 2016'; p='Embest';;
+	a32082 ) n='3B'; b='1.2'; d='Q4 2016'; p='Sony Japan';;
+
+	a020d3 ) n='3B+'; b='1.3'; d='Q1 2018'; p='Sony';;
+
+	* ) n='(unknown)'; b='(unknown)'; d='(unknown)'; p='(unknown)';;
+esac
+
+echo "Raspberry Pi : $n"
+echo "Serial no.   : $s"
+printf 'Memory       :%5u MB\n' $m0
+printf '       ARM   :%5u MB\n' $m1
+printf '       GPU   :%5u MB\n' $m2
+printf 'Clock  ARM   :%5u MHz x%u\n' $f1 $c
+printf '       Core  :%5u MHz\n' $f2
+printf '       GPU   :%5u MHz\n' $f3
+printf '       SDRAM :%5u MHz\n' $f4
+echo "Board rev.   : $b"
+echo "Release date : $d"
+echo "Manufacturer : $p"
