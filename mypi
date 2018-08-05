@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 #########################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
@@ -16,7 +15,6 @@
 # Credits    : https://elinux.org/RPi_HardwareHistory#Board_Revision_History
 #########################################################################
 
-
 # Revision identifier
 # strip optional "1000" prefix which is added for overvoltage
 id=$(awk '/^Revision/ {sub("^1000", "", $3); print $3}' /proc/cpuinfo)
@@ -27,7 +25,7 @@ s=$(awk '/^Serial/ {print $3}' /proc/cpuinfo)
 # Processor count
 c=$(cat /proc/cpuinfo | grep ^processor | wc -l)
 
-# Configured RAM, calculated total
+# Configured RAM, calculate total
 m1=$(vcgencmd get_mem arm | grep -oP '\d+')
 m2=$(vcgencmd get_mem gpu | grep -oP '\d+')
 (( m0 = m1 + m2 ))
@@ -108,5 +106,4 @@ printf "       SDRAM   : %${w}u MHz\n" $f4
 echo   "Board revision : $b"
 echo   "Release date   : $d"
 echo   "Manufacturer   : $p"
-
 exit 0
