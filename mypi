@@ -1,18 +1,51 @@
 #!/usr/bin/env bash
-# Ref.: https://elinux.org/RPi_HardwareHistory#Board_Revision_History
 
+#########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Raspberry Pi
+# Requires   : bash, vcgencmd
+# Location   : ~/bin, /usr/local/bin
+# Name       : mypi
+# Version    : 1.0.0
+# Date       : 2018-08-05
+# Purpose    : Identify the Raspberry Pi by model, board revision, etc.
+# Parameters : none
+# Settings   : none
+# Exit     0 : No script errors
+# Credits    : https://elinux.org/RPi_HardwareHistory#Board_Revision_History
+#########################################################################
+
+
+# Revision identifier
+# strip optional "1000" prefix which is added for overvoltage
 id=$(awk '/^Revision/ {sub("^1000", "", $3); print $3}' /proc/cpuinfo)
+
+# Serial number
 s=$(awk '/^Serial/ {print $3}' /proc/cpuinfo)
+
+# Processor count
 c=$(cat /proc/cpuinfo | grep ^processor | wc -l)
 
+# Configured RAM, calculated total
 m1=$(vcgencmd get_mem arm | grep -oP '\d+')
 m2=$(vcgencmd get_mem gpu | grep -oP '\d+')
 (( m0 = m1 + m2 ))
 
+# Clock frequencies
 f1=$(vcgencmd get_config arm_freq | grep -oP '\d+')
 f2=$(vcgencmd get_config core_freq | grep -oP '\d+')
 f3=$(vcgencmd get_config gpu_freq | grep -oP '\d+')
 f4=$(vcgencmd get_config sdram_freq | grep -oP '\d+')
+
+# Compute number width
+max=$(( f1 > m0 ? f1 : m0 ))
+w=1
+[ "$max" -ge 10 ] && w=2
+[ "$max" -ge 100 ] && w=3
+[ "$max" -ge 1000 ] && w=4
+[ "$max" -ge 10000 ] && w=5
+[ "$max" -ge 100000 ] && w=6
 
 case "$id" in
 	0007 ) n='1A'; b='2.0'; d='Q1 2013'; p='Egoman';;
@@ -23,9 +56,9 @@ case "$id" in
 	0015   ) n='1A+'; b='1.1'; d='(unknown)'; p='Embest';;
 	900021 ) n='1A+'; b='1.1'; d='Q3 2016'  ; p='Sony';;
 
-	Beta ) n='1B'; b='?'  ; d='Q1 2012'; p='?';;
-	0002 ) n='1B'; b='1.0'; d='Q1 2012'; p='?';;
-	0003 ) n='1B'; b='1.0'; d='Q3 2012'; p='?';;
+	Beta ) n='1B'; b='-'  ; d='Q1 2012'; p='-';;
+	0002 ) n='1B'; b='1.0'; d='Q1 2012'; p='(unknown)';;
+	0003 ) n='1B'; b='1.0'; d='Q3 2012'; p='(unknown)';;
 	0004 ) n='1B'; b='2.0'; d='Q3 2012'; p='Sony';;
 	0005 ) n='1B'; b='2.0'; d='Q4 2012'; p='Qisda';;
 	0006 ) n='1B'; b='2.0'; d='Q4 2012'; p='Egoman';;
@@ -62,15 +95,18 @@ case "$id" in
 	* ) n='(unknown)'; b='(unknown)'; d='(unknown)'; p='(unknown)';;
 esac
 
-echo "Raspberry Pi : $n"
-echo "Serial no.   : $s"
-printf 'Memory       :%5u MB\n' $m0
-printf '       ARM   :%5u MB\n' $m1
-printf '       GPU   :%5u MB\n' $m2
-printf 'Clock  ARM   :%5u MHz x%u\n' $f1 $c
-printf '       Core  :%5u MHz\n' $f2
-printf '       GPU   :%5u MHz\n' $f3
-printf '       SDRAM :%5u MHz\n' $f4
-echo "Board rev.   : $b"
-echo "Release date : $d"
-echo "Manufacturer : $p"
+# Report
+echo   "Raspberry Pi   : $n"
+echo   "Serial number  : $s"
+printf "Memory         : %${w}u MB\n" $m0
+printf "       ARM     : %${w}u MB\n" $m1
+printf "       GPU     : %${w}u MB\n" $m2
+printf "Clock  ARM     : %${w}u MHz x%u\n" $f1 $c
+printf "       Core    : %${w}u MHz\n" $f2
+printf "       GPU     : %${w}u MHz\n" $f3
+printf "       SDRAM   : %${w}u MHz\n" $f4
+echo   "Board revision : $b"
+echo   "Release date   : $d"
+echo   "Manufacturer   : $p"
+
+exit 0
