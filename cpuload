@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+#########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Linux
+# Requires   : bash, awk, /proc/stat
+# Location   : ~/bin, /usr/local/bin
+# Name       : cpuload
+# Version    : 1.0.0
+# Date       : 2018-08-09
+# Purpose    : Determine 1 second average CPU load as a percentage
+# Parameters : none
+# Settings   : none
+# Exit     0 : No script errors
+#########################################################################
+
+function cpucycles() {
+	head -n1 /proc/stat | awk '{a=$2+$3+$4+$7+$8+$9; b=a+$5+$6; print a,b}'
+}
+
+set $(cpucycles)
+a=$1
+b=$2
+sleep 1
+set $(cpucycles)
+echo $(( (1000 * ($1 - a) / ($2 - b) + 5) / 10 ))%
