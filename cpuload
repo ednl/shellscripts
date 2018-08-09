@@ -19,8 +19,6 @@ function cpucycles() {
 }
 
 set $(cpucycles)
-a=$1
-b=$2
 sleep 1
-set $(cpucycles)
-echo $(( (1000 * ($1 - a) / ($2 - b) + 5) / 10 ))%
+set $1 $2 $(cpucycles)
+echo $(( (1000 * ($3 - $1) / ($4 - $2) + 5) / 10 ))%
