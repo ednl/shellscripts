@@ -7,8 +7,8 @@
 # Requires   : Raspbian, bash, vcgencmd
 # Location   : ~/bin/
 # Name       : volts
-# Version    : 1.0.0
-# Date       : 2018-06-21
+# Version    : 1.0.1
+# Date       : 2018-08-11
 # Purpose    : Print formatted list of voltage measurements on the RPi
 # Parameters : none
 # Settings   : none
@@ -47,8 +47,8 @@ for PROBE in core sdram_c sdram_i sdram_p; do
 	# Remove trailing 'V', result is float #.#####
 	VOLT=${VOLT%V}
 
-	# Replace decimal separator
-	VOLT=${VOLT/$DOT/$SEP}
+	# Replace decimal separator if needed
+	[ "$SEP" != "$DOT" ] && VOLT=${VOLT/$DOT/$SEP}
 
 	# Formatted output
 	printf '%-8s:%6.3f\n' "$PROBE" "$VOLT"
