@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : BSD/Linux
+# Requires   : bash, POSIX, file, tr
+# Location   : ~/bin, /usr/local/bin
+# Name       : rot13
+# Version    : 1.0.0
+# Date       : 2018-08-14
+# Purpose    : Encode or decode any (US-ASCII) text using ROT13
+# Parameters : Text to be en/decoded.
+#            : Single parameter may be a file name.
+#            : Input can also be piped.
+# Output     : Translated text on stdout. Error message on stderr.
+# Settings   : none
+# Exit     0 : No error
+#          1 : No input detected
+#######################################################################
+
+function tr_rot13() {
+	tr a-zA-Z n-za-mN-ZA-M
+}
+
+if [ ! -t 0 ]; then
+	# Piped input, probably
+	tr_rot13
+	exit 0
+fi
+
+if [ -z "$1" ]; then
+	# No input detected
+	self=$(basename "$0")
+	echo "Usage 1: $self <text>" 1>&2
+	echo "Usage 2: $self <filename.txt>" 1>&2
+	echo "Usage 3: echo <text> | $self" 1>&2
+	exit 1
+fi
+
+if [ "$#" -eq 1 -a -f "$1" -a -r "$1" ]; then
+	# Single argument is a file that can be read
+	mime=$(file -b -i -eencoding "$1" | cut -d';' -f1)
+	if [ "$mime" = "text/plain" ]; then
+		# It is a text file (encoding not checked)
+		cat "$1" | tr_rot13
+		exit 0
+	fi
+fi
+
+# Use argument(s) as text
+echo "$*" | tr_rot13
