@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 #######################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
@@ -7,13 +6,12 @@
 # Requires   : bash, POSIX, file, tr
 # Location   : ~/bin, /usr/local/bin
 # Name       : rot135
-# Version    : 1.0.1
+# Version    : 1.0.2
 # Date       : 2018-08-14
-# Purpose    : Encode or decode any (US-ASCII) text using ROT13
-#              and numbers using ROT5. You'll never break the cypher!!1
-# Parameters : Text to be en/decoded.
-#            : Single parameter may be a file name.
-#            : Input can also be piped.
+# Purpose    : Encode or decode any (US-ASCII) text using ROT13 and
+#              numbers using ROT5. You will never break this cypher!!1
+# Parameters : Text to be encoded, or a text file name.
+# Input      : Original text via a pipe, or as parameter(s).
 # Output     : Translated text on stdout. Error message on stderr.
 # Settings   : none
 # Exit     0 : No error
