@@ -54,6 +54,8 @@ case "$id" in
 	0015   ) n='1A+'; b='1.1'; d='(unknown)'; p='Embest';;
 	900021 ) n='1A+'; b='1.1'; d='Q3 2016'  ; p='Sony';;
 
+	9020e0 ) n='3A+'; b='1.0'; d='Q4 2018'; p='Sony';;
+
 	Beta ) n='1B'; b='-'  ; d='Q1 2012'; p='-';;
 	0002 ) n='1B'; b='1.0'; d='Q1 2012'; p='(unknown)';;
 	0003 ) n='1B'; b='1.0'; d='Q3 2012'; p='(unknown)';;
@@ -89,7 +91,6 @@ case "$id" in
 	a32082 ) n='3B'; b='1.2'; d='Q4 2016'; p='Sony Japan';;
 
 	a020d3 ) n='3B+'; b='1.3'; d='Q1 2018'; p='Sony';;
-	9020e0 ) n='3A+'; b='1.0'; d='Q4 2018'; p='Sony';;
 
 	* ) n='(unknown)'; b='(unknown)'; d='(unknown)'; p='(unknown)';;
 esac
