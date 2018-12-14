@@ -1,0 +1,80 @@
+#!/bin/sh
+#########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : macOS, Linux
+# Requires   : sh, date, curl
+# Location   : ~/bin, /usr/local/bin
+# Name       : xrated
+# Version    : 1.0.0
+# Date       : 2018-12-14
+# Purpose    : Download episodes of radio show "X-Rated"
+#            :   from Concertzender, formerly KinkFM
+# Parameters : [number of recent episodes to download] default=1
+# Settings   : DIR = folder with downloaded files
+#            : PRE = filename prefix for downloaded files
+# Exit     0 : No script errors
+#          1 : Folder not found and could not be created
+#          2 : Invalid parameter, number of episodes must be >=1, <1000
+#          3 : Weekday number not correctly determined
+#########################################################################
+
+# Where to keep downloaded files, check if folder exists
+DIR=~/Music/KinkFM
+[ ! -d "$DIR" ] && mkdir -p "$DIR" 2>/dev/null
+if [ ! -d "$DIR" ]; then
+	echo "Folder not found: $DIR" >&2
+	exit 1
+fi
+
+# Optional parameter: number of recent episodes to download
+# default = 1
+declare -i WEEKS=1
+if [ -n "$1" ]; then
+	if [ "$1" -ge 1 -a "$1" -lt 1000 ]; then
+		WEEKS="$1"
+	else
+		echo 'Number of episodes should be in [1..1000>.' >&2
+		exit 2
+	fi
+fi
+
+# Weekday number of today, Monday=1 .. Sunday=7
+declare -i AGO=$(date '+%u' 2>/dev/null)
+if [ $AGO -lt 1 -o $AGO -gt 7 ]; then
+	echo 'Internal error: weekday should be in [1..7].' >&2
+	exit 3
+fi
+
+BASE='https://streams.greenhost.nl/cz/cz/rod'
+TIME='2100'
+PRE='X-Rated_'
+EXT='mp3'
+
+# Loop WEEKS times, each time look for the episode from a week earlier
+while [ "$WEEKS" -gt 0 ]
+do
+	# Get date in YYYYMMDD format for AGO days ago, try BSD and GNU style
+	DATE="$(date -v-${AGO}d +%Y%m%d 2>/dev/null || date --date="${AGO} days ago" +%Y%m%d)"
+	# Local filename
+	FILE="$PRE$DATE.$EXT"
+	# Local path
+	DEST="$DIR/$FILE"
+	# Check if file exists, if not try to download
+	if [ -e "$DEST" ]; then
+		echo "Found: $FILE"
+	else
+		echo "Downloading: $FILE"
+		# Download to file, use progress bar, preserve file time
+		curl -# "$BASE/$DATE-$TIME.$EXT" -R -o "$DEST"
+	fi
+	# Next loop: look 7 days further back
+	AGO=$((AGO + 7))
+	# Loop counter
+	WEEKS=$((WEEKS - 1))
+done
+
+# If on Mac, open the folder with downloaded episodes
+[ "$(uname)" = "Darwin" ] && open "$DIR"
+
+exit 0
