@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : macOS
+# Requires   : bash, grep, awk, mount, diskutil
+# Location   : ~/bin, /usr/local/bin
+# Name       : curvol
+# Version    : 1.0.0
+# Date       : 2018-12-14
+# Purpose    : Identify the current system volume directory
+# Parameters : none
+# Settings   : none
+# Exit     0 : No script errors
+#          1 : Mount point of current system volume not found
+#########################################################################
+
+# Get the root device, e.g. "disk0s0"
+DEV=$(mount | grep ' on / (' | awk '{print $1}')
+
+# Get the corresponding volume name, e.g. "Mac OS X"
+VOL=$(diskutil info "${DEV}" | grep 'Volume Name:' | awk '{print $3}')
+
+# Recreate the directory name
+MNT="/Volumes/${VOL}"
+
+# Test if the directory exists
+[ -d "${MNT}" ] && echo "${MNT}" && exit 0
+
+# Directory not found
+echo "Mount point of current system volume not found.
+  Device = ${DEV}
+  Volume = ${VOL}
+  Not a directory = ${MNT}" 1>&2
+exit 1
