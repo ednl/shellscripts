@@ -15,7 +15,7 @@
 #          1 : Mount point of current system volume not found
 #########################################################################
 
-# Get the root device, e.g. "disk0s0"
+# Get the root device, e.g. "/dev/disk0s3"
 DEV=$(mount | grep ' on / (' | awk '{print $1}')
 
 # Get the corresponding volume name, e.g. "Mac OS X"
@@ -31,5 +31,5 @@ MNT="/Volumes/${VOL}"
 echo "Mount point of current system volume not found.
   Device = ${DEV}
   Volume = ${VOL}
-  Not a directory = ${MNT}" 1>&2
+  Not a directory = ${MNT}" >&2
 exit 1
