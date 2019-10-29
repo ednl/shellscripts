@@ -3,7 +3,7 @@
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
 # Platform   : macOS, Linux
-# Requires   : sh, date, curl
+# Requires   : sh, date, curl, touch, open
 # Location   : ~/bin, /usr/local/bin
 # Name       : xrated
 # Version    : 1.0.0
@@ -67,6 +67,12 @@ do
 		echo "Downloading: $FILE"
 		# Download to file, use progress bar, preserve file time
 		curl -# "$BASE/$DATE-$TIME.$EXT" -R -o "$DEST"
+		# Just to be sure, check file modification time
+		if [ -e "$DEST" ]; then
+			TREF="${DATE}2300.00"
+			TMOD="$(date -r "$DEST" +%Y%m%d%H%M.%S)"
+			[ "$TREF" != "$TMOD" ] && touch -t "$TREF" "$DEST"
+		fi
 	fi
 	# Next loop: look 7 days further back
 	AGO=$((AGO + 7))
