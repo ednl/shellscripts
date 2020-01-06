@@ -2,7 +2,7 @@
 #######################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
-# Platform   : macOS
+# Platform   : macOS, Linux, WSL
 # Requires   : bash, git, curl, cut, sed, xargs
 # Location   : ~/bin/
 # Name       : pullrepos
