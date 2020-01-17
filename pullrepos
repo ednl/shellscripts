@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+
 #######################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
@@ -6,8 +7,8 @@
 # Requires   : bash, git, curl, cut, sed, xargs
 # Location   : ~/bin/
 # Name       : pullrepos
-# Version    : 1.0.0
-# Date       : 2020-01-06
+# Version    : 1.0.1
+# Date       : 2020-01-17
 # Purpose    : Update GitHub repositories. Clone if not found locally.
 # Parameters : none
 # Settings   : GITPAT = GitHub personal access token with read access
@@ -20,7 +21,9 @@
 #######################################################################
 
 if [ -z "$GITPAT" ]; then
-	echo "GitHub personal access token not set" >&2
+	echo "GitHub personal access token not set." >&2
+	echo "Get it at https://github.com/settings/tokens and" >&2
+	echo "set in ~/.profile: export GITPAT=tokengoeshere" >&2
 	exit 1
 fi
 
@@ -39,6 +42,14 @@ REPOS=$(curl -s -H "Authorization: bearer $GITPAT" -X POST -d "{\"query\":\"{vie
 
 echo "GitHub profile : $PROFILE"
 echo "Repositories   : $REPOS"
+echo
+
+read -p "Update or clone all repositories? (Y)es (N)o " -n 1 -r
+echo
+if [[ ! "$REPLY" =~ ^[yYjJ]$ ]]; then
+	echo 'Bye.'
+	exit 0
+fi
 echo
 
 cd "$BASE"
