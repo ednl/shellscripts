@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+cat /var/log/apt/history.log | grep -E '^Commandline: .* install ' | sed -E 's/.* install //' | sed -E 's/(^| )\-[^ ]+//g' | xargs | tr ' ' '\n' | sort | uniq
