@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+
+##############################################################################
+#
+#  dailydir - copy files from memory card to disk into daily subfolders
+#
+#  Copy ORF files from Olympus camera card to D: drive using WSL:
+#  1. make mount point in WSL: sudo mkdir /mnt/e
+#  2. mount the memory card in WSL: sudo mount -t drvfs E: /mnt/e
+#  3. run this script to copy files into subfolders <DST>/<year>/<yyyy-mm-dd>
+#  4. remove the memory card from WSL: sudo umount /mnt/e
+#
+#  (c) 2020 E. Dronkert
+#  https://github.com/ednl
+#
+##############################################################################
+
+SRC="/mnt/e/DCIM/101OLYMP"                 # location of original photo files
+DST="/mnt/d/ewoud/Pictures/Olympus E520"   # destination base dir
+EXT=".ORF"                                 # Olympus Raw Format files
+
+for D1 in $(stat -c '%y' "$SRC/"*"$EXT" | cut -d' ' -f1 | sort | uniq)
+do
+	echo "$D1"                             # the current day
+	D2=$(date -d "$D1 +1 day" +%Y-%m-%d)   # the next day
+	Y=${D1%%-*}                            # the year
+	SUB="$DST/$Y/$D1"                      # destination base dir + subfolder
+	mkdir -p "$SUB"                        # make sure dir exists # TODO: test
+	find "$SRC" \                          # source dir
+		-maxdepth 1 \                      # no subdir recursion
+		-type f \                          # look for files
+		-name '*'"$EXT" \                  # with this extension
+		-newermt "$D1" ! -newermt "$D2" \  # all from one day
+		-print \                           # print file path
+		-execdir cp -n -t "$SUB" {} +      # copy if not exists
+	echo
+done
