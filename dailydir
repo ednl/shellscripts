@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 ##############################################################################
 #
 #  dailydir - copy files from memory card to disk into daily subfolders
@@ -19,19 +18,41 @@ SRC="/mnt/e/DCIM/101OLYMP"                 # location of original photo files
 DST="/mnt/d/ewoud/Pictures/Olympus E520"   # destination base dir
 EXT=".ORF"                                 # Olympus Raw Format files
 
+[ ! -e "$SRC" ] || [ ! -d "$SRC" ] || [ ! -r "$SRC" ] && {
+	echo "Not accessible: $SRC" >&2
+	echo "Connect memory card: sudo mount -t drvfs E: /mnt/e" >&2
+	exit 1
+}
+
+[ ! -e "$DST" ] || [ ! -d "$DST" ] || [ ! -w "$DST" ] && {
+	echo "Not accessible: $DST" >&2
+	exit 2
+}
+
+N=$(find "$SRC" -maxdepth 1 -type f -name '*'"$EXT" | wc -l)
+[ -z "$N" ] || [ "$N" -lt 1 ] && {
+	echo "No $EXT files found in $SRC" >&2
+	exit 3
+}
+
+echo "Files found: $N"
+echo
+
 for D1 in $(stat -c '%y' "$SRC/"*"$EXT" | cut -d' ' -f1 | sort | uniq)
 do
-	echo "$D1"                             # the current day
-	D2=$(date -d "$D1 +1 day" +%Y-%m-%d)   # the next day
-	Y=${D1%%-*}                            # the year
-	SUB="$DST/$Y/$D1"                      # destination base dir + subfolder
-	mkdir -p "$SUB"                        # make sure dir exists # TODO: test
-	find "$SRC" \                          # source dir
-		-maxdepth 1 \                      # no subdir recursion
-		-type f \                          # look for files
-		-name '*'"$EXT" \                  # with this extension
-		-newermt "$D1" ! -newermt "$D2" \  # all from one day
-		-print \                           # print file path
-		-execdir cp -n -t "$SUB" {} +      # copy if not exists
+	D2=$(date -d "$D1 +1 day" +%Y-%m-%d)   # the next day as boundary
+	Y=${D1%%-*}                            # the year as main subfolder
+	SUB="$DST/$Y/$D1"                      # destination base dir + sub-sub-folder
+	[ ! -e "$SUB" ] && mkdir -p "$SUB"     # create subfolder if not exists
+	[ ! -e "$SUB" ] || [ ! -d "$SUB" ] || [ ! -w "$SUB" ] && {
+		echo "Not accessible: $SUB" >&2
+		exit 4
+	}
+	echo "Copying to $SUB"                 # the current day subfolder
+	find "$SRC" -maxdepth 1 -type f \
+		-name '*'"$EXT" \
+		-newermt "$D1" ! -newermt "$D2" \
+		-print -execdir cp -n -t "$SUB" {} +
 	echo
 done
+echo "Done. Disconnect memory card: sudo umount /mnt/e"
