@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+
+###########################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : Raspberry Pi, Raspbian
+# Requires   : bash, curl, convert, ffmpeg, rsync, mail,
+#              remote server with ssh key access
+# Location   : /usr/local/bin
+# Name       : temperatuur
+# Version    : 1.0.1
+# Date       : 2018-04-23
+# Purpose    : Download new KNMI temperature chart every 20 minutes, make
+#              daily video of collected images, upload to webserver.
+# How to use : Start as a system service
+#              or from /etc/rc.local as "temperatuur &"
+#              or from the command line as "sudo nohup temperatuur &"
+# Settings   : DATA = web location of fresh image file
+#              SAVE = local directory for saving images and videos
+#              SRV = remote server (plus user and directory)
+#              ID = SSH key for access to remote server
+###########################################################################
+
+DATA='http://cdn.knmi.nl/knmi/map/page/weer/actueel-weer/temperatuur.png'
+SAVE='/home/pi/knmi/'                  # Local directory
+
+SRV='ewoud@shell.xs4all.nl:WWW/knmi/'  # Where to upload the video
+ID='/home/pi/.ssh/id_rsa'              # SSH key
+
+PRE='img-'  # To distinguish from downloaded files when removing
+FMT='%03d'  # Three digit format 000-999 needed for 6*24=144 images per day
+SUF='.png'
+DIM='640x640'  # Convert downloaded images to these dimensions, mp4 compatible
+
+PREV=25
+while true; do
+
+	H=$(date +%-H)
+	if (( H < PREV )); then
+
+		# New day
+		YDAY=$(date -dyesterday +%Y%m%d)
+
+		# Count number of saved image files from yesterday
+		# Ignore error if none found
+		n=$(ls "$SAVE$YDAY"*"$SUF" 2>/dev/null | wc -l)
+
+		if (( n == 1 )); then
+
+			# Just one image from yesterday, might as well upload it I guess
+			SRC=$(ls "$SAVE$YDAY"*"$SUF")
+			DST="temperatuur-$YDAY$SUF"
+			rsync -qau -e "ssh -i '$ID'" "$SRC" "$SRV$DST"
+			mv -f "$SRC" "$SAVE$DST"
+
+		elif (( n > 1 )); then
+
+			# Delete all image (but not video) files older than yesterday
+			#FIRST=$(ls "$SAVE$YDAY"*"$SUF" | head -n1)
+			#KEEP=$(basename "$FIRST")
+			#find "$SAVE" -maxdepth 1 -type f -name "*$SUF" ! -newer "$FIRST" ! -name "$KEEP" -delete
+
+			# Make room for new sequential files, delete the old ones
+			rm -f "$SAVE$PRE"*"$SUF"
+
+			# Rename yesterday's files sequentially
+			i=0
+			for f in "$SAVE$YDAY"*"$SUF"; do
+				mv -f "$f" "$SAVE$PRE$(printf $FMT $i)$SUF"
+				(( ++i ))
+			done
+
+			# Make video from sequential files
+			VIDNAME="temperatuur-$YDAY.mp4"
+			VID="$SAVE$VIDNAME"
+			ffmpeg -y -r 8 -i "$SAVE$PRE$FMT$SUF" -an -r 8 -s $DIM -c:v libx264 -pix_fmt yuv420p "$VID" &>/dev/null
+
+			# Process video if it exists
+			if [[ -e "$VID" && -f "$VID" && -r "$VID" && -s "$VID" ]]; then
+
+				chmod 644 "$VID"
+				chown pi:pi "$VID"
+
+				# Delete just processed files
+				#rm -f "$SAVE$PRE"*"$SUF"
+
+				# Upload, 3 tries
+				for i in {1..3}; do
+					rsync -qau -e "ssh -i '$ID'" "$VID" "$SRV$VIDNAME"
+				done
+
+				# Send mail notification of new video
+				URL='https://ewoud.home.xs4all.nl/knmi/'
+				MAIL="To: Ewoud Dronkert <ewoud@dronkert.net>
+From: ED Home
+Subject: Nieuwe temperatuurvideo
+
+Nieuwe temperatuurvideo:
+$URL$VIDNAME
+
+Oudere video's staan op $URL
+
+-- 
+Dit is een automatisch verstuurde e-mail. Uw antwoord wordt niet gelezen."
+				echo "$MAIL" | ssmtp -t
+
+			fi
+		fi
+	fi
+	PREV=$H
+
+	# Sleep until :04, :14, :24, :34, :44, :54
+	M=$(date +%-M)                               # minutes of the clock
+	while (( M >= 10 )); do (( M -= 10 )); done  # modulo 10
+	(( N = 4 - M ))                              # time diff to next img of the interval
+	if (( N < 0 )); then (( N += 10 )); fi       # no negative sleep
+	sleep ${N}m                                  # sleep N minutes
+
+	# Get KNMI temperature chart
+	FILE="$SAVE$(date +%Y%m%d%H%M)$SUF"
+	curl -s "$DATA" > "$FILE"
+	if [ -e "$FILE" ]; then
+		if [ -s "$FILE" ]; then
+			ISPNG=$(file "$FILE" | grep -F 'PNG image')
+			if [ -n "$ISPNG" ]; then
+
+				convert "$FILE" \
+					-strip \
+					-define png:color-type=2 \
+					-gravity center \
+					-extent $DIM \
+					"$FILE"
+				chmod 644 "$FILE"
+				chown pi:pi "$FILE"
+
+			else
+				rm -f "$FILE"
+			fi
+		else
+			rm -f "$FILE"
+		fi
+	fi
+
+done

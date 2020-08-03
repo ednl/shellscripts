@@ -10,13 +10,14 @@ alias diff='diff -y --suppress-common-lines'
 
 # Simple extensions
 alias l='ls -FGhl'
-alias la='ls -FGhla'
-alias lo=logout
+alias ll='ls -FGhla'
+#alias lo=logout
+alias gitlog='git log --all --graph --decorate --oneline'
 
 # Complicated extensions
 alias isodate='date +"%F %T %z"'
 alias dfree='df -g . | grep "/dev/disk" | xargs | cut -d" " -f4'
-alias myip='ifconfig | grep -oE "inet [^ ]+" | cut -d" " -f2 | grep --color=never -v "^127\."'
+alias myip='ifconfig | grep -oE "inet.*(broadcast|autoconf secured)" | cut -d" " -f2'
 
 # Functions
 code () { VSCODE_CWD="$PWD" open -n -b "com.microsoft.VSCode" --args $* ;}
