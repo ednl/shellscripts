@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+
+###############################################################################
+#
+#  MacOS bash script for uploading files to a subdir of your website,
+#  while moving the file to your local Sites directory.
+#
+#  Assumes SSH access by key.
+#
+###############################################################################
+
+# Enter your own details here
+REMOTEADDR='YOUR_DOMAIN_NAME_HERE.com'
+WEBADDR='YOUR_WEBSITE_ADDRESS_HERE.com'
+REMOTEUSER='YOUR_SSH_USER_NAME_HERE'
+
+# You may need to change these
+REMOTEBASE="domains/${REMOTEADDR}/public_html"
+LOCALBASE=~/"Sites/${REMOTEADDR}/public_html"
+REMOTEID=~/'.ssh/id_rsa'
+REMOTEPORT=22
+
+# By default, fail if local or remote file already exists
+FORCE=0
+
+if [ $# -lt 2 -o $# -gt 3 ]; then
+	echo "Usage: $(basename "$0") [-f] <subdir> <local file>" 1>&2
+	exit 1
+fi
+
+if [ "$1" = "-f" ]; then
+	FORCE=1
+	shift
+fi
+
+if [ ! -f "$2" -o ! -r "$2" ]; then
+	echo "File not found: $2" 1>&2
+	exit 2
+fi
+
+if [ ! -d "${LOCALBASE}" ]; then
+	echo "Local directory not found: ${LOCALBASE}" 1>&2
+	exit 3
+fi
+
+if [ "$1" = '/' -o "$1" = '.' ]; then
+	LOCALDIR="${LOCALBASE}"
+	REMOTEDIR="${REMOTEBASE}"
+else
+	SUB=$(echo "$1" | grep -E '^[a-z0-9_-]{1,15}$')
+	if [ -z "${SUB}" ]; then
+		echo "Subdir must be a-z, 0-9, _, -, no spaces, max. 15 characters." 1>&2
+		exit 4
+	fi
+	LOCALDIR="${LOCALBASE}/${SUB}"
+	REMOTEDIR="${REMOTEBASE}/${SUB}"
+fi
+
+if [ ! -d "${LOCALDIR}" ]; then
+	mkdir -p "${LOCALDIR}" 2>/dev/null
+	if [ ! -d "${LOCALDIR}" ]; then
+		echo "Unable to create directory: ${LOCALDIR}" 1>&2
+		exit 5
+	fi
+fi
+
+FILENAME="$(basename "$2")"
+LOCALDEST="${LOCALDIR}/${FILENAME}"
+if (( FORCE == 0 )); then
+	# Only check if no -f flag specified
+	if [ -e "${LOCALDEST}" ]; then
+		echo "Local file already exists: ${LOCALDEST}" 1>&2
+		exit 6
+	fi
+fi
+
+if chmod 644 "$2" 2>/dev/null; then
+	:
+else
+	echo "Unable to make file world readable." 1>&2
+	exit 7
+fi
+
+if [ ! -r "${REMOTEID}" ]; then
+	echo "Can't read your SSH key at ${REMOTEID}" 1>&2
+	exit 8
+fi
+
+ssh -i "${REMOTEID}" -l "${REMOTEUSER}" -p "${REMOTEPORT}" "${REMOTEADDR}" "[ ! -d \"${REMOTEDIR}\" ] && mkdir -p \"${REMOTEDIR}\" && chmod -f 755 \"${REMOTEDIR}\""
+ERR=$(ssh -i "${REMOTEID}" -l "${REMOTEUSER}" -p "${REMOTEPORT}" "${REMOTEADDR}" "[ -d \"${REMOTEDIR}\" -a -w \"${REMOTEDIR}\" ] || echo \"error\"")
+if [ -n "${ERR}" ]; then
+	echo "Server directory not accessible: ${REMOTEDIR}" 1>&2
+	exit 9
+fi
+
+REMOTEDEST="${REMOTEDIR}/${FILENAME}"
+if (( FORCE == 0 )); then
+	# Only check if no -f flag specified
+	ERR=$(ssh -i "${REMOTEID}" -l "${REMOTEUSER}" -p "${REMOTEPORT}" "${REMOTEADDR}" "[ -e \"${REMOTEDEST}\" ] && echo \"error\"")
+	if [ -n "${ERR}" ]; then
+		echo "Server file already exists: ${REMOTEDEST}" 1>&2
+		exit 10
+	fi
+fi
+
+scp -i "${REMOTEID}" -P "${REMOTEPORT}" -p "$2" "${REMOTEUSER}@${REMOTEADDR}:${REMOTEDIR}/"
+mv -f "$2" "${LOCALDIR}/"
+open "${LOCALDIR}/"
+open "https://${WEBADDR}/${SUB}/${FILENAME}"
