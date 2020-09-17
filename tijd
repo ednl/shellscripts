@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : macOS
+# Requires   : bash, grep, sed, say
+# Location   : ~/bin/, /usr/local/bin
+# Name       : tijd
+# Version    : 1.0.0
+# Date       : 2020-09-17
+# Purpose    : Say the time in Dutch.
+# Parameters : 24h time, two digits for minutes, optionally separated
+#              by a colon, point or h.
+# Exit     0 : No errors
+#          1 : Invalid time
+#######################################################################
+
+if [ -z "$1" ]; then
+	N=$(date +%k%M)
+else
+	# formaat = [h]h:mm
+	N=$(echo "$1" | grep -P '^\d+[hH:.]?\d{2}[mM]?$')
+	[ -z "$N" ] && { echo "Ongeldige tijd." >&2; exit 1; }
+	# bewaar alleen getallen
+	N=$(echo "$N" | sed -E 's/[^[:digit:]]+//g')
+fi
+
+# minuten zijn de laatste 2, uren de rest
+U=${N:0:(-2)}
+M=${N:(-2)}
+
+# voorlopnullen weglaten
+while [ ${#U} -gt 1 -a "${U:0:1}" = "0" ]; do
+	U=${U:1}
+done
+[ "${M:0:1}" = "0" ] && M=${M:1}
+
+# normaliseer
+while (( M > 59 )); do
+	(( U += 1 ))
+	(( M -= 60 ))
+done
+while (( U > 23 )); do
+	(( U -= 24 ))
+done
+
+# dagdeel
+if (( U <  6 )); then
+	DEEL="nacht"
+elif (( U < 12 )); then
+	DEEL="ochtend"
+elif (( U < 18 )); then
+	DEEL="middag"
+else
+	DEEL="avond"
+fi
+
+# het huidige uur op 12-urige klok
+(( U == 0 )) && (( U = 12 ))
+(( U > 12 )) && (( U -= 12 ))
+
+# het volgende uur
+(( VU = U + 1 ))
+(( VU > 12 )) && (( VU -= 12 ))
+
+if (( M == 0 )); then
+	ZEG="$U uur"
+elif (( M == 15 )); then
+	ZEG="kwart over $U"
+elif (( M == 30 )); then
+	ZEG="half $VU"
+elif (( M == 45 )); then
+	ZEG="kwart voor $VU"
+elif (( M < 15 )); then
+	(( M == 1 )) && W="minuut" || W="minuten"
+	ZEG="$M $W over $U"
+elif (( M < 30 )); then
+	(( MM = 30 - M ))
+	(( MM == 1 )) && W="minuut" || W="minuten"
+	ZEG="$MM $W voor half $VU"
+elif (( M < 45 )); then
+	(( MM = M - 30 ))
+	(( MM == 1 )) && W="minuut" || W="minuten"
+	ZEG="$MM $W over half $VU"
+else
+	(( MM = 60 - M ))
+	(( MM == 1 )) && W="minuut" || W="minuten"
+	ZEG="$MM $W voor $VU"
+fi
+
+say "Het is $ZEG 's ${DEEL}s."
+exit 0
