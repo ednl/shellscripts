@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+#######################################################################
+# Made by    : Ewoud Dronkert
+# Licence    : GNU GPL v3
+# Platform   : macOS
+# Requires   : bash, MacPorts, grep, awk, sed
+# Location   : ~/bin/, /usr/local/bin
+# Name       : macportsmissing
+# Version    : 1.0.0
+# Date       : 2020-10-27
+# Purpose    : Check if all py38 packages also exists as py39.
+#######################################################################
+
+echo "Can I upgrade MacPorts from Python 3.8 to 3.9?"
+echo "Installed for py38, missing for py39:"
+
+# Initialise
+PRESENT=0
+MISSING=0
+
+# List all py38 packages and change to py39
+for NAME in $(port installed | grep -F 'py38' | awk '{print $1}' | sed 's/py38/py39/')
+do
+	RESULT=$(port search "$NAME")      # info starts with package name if found
+	MATCH=$(expr "$RESULT" : "$NAME")  # length of match from start
+	if (( MATCH == ${#NAME} )); then   # name found at start of string
+		(( PRESENT++ ))                # count packages already present
+	else                               # name not found at start of string
+		(( MISSING++ ))                # count packages still missing
+		echo "$NAME"                   # show missing package
+	fi
+done
+
+# Summary
+echo
+echo "Missing: $MISSING"
+echo "Present: $PRESENT"
