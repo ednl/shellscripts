@@ -6,32 +6,32 @@
 # Requires   : bash, MacPorts, grep, awk, sed
 # Location   : ~/bin/, /usr/local/bin
 # Name       : macportsmissing
-# Version    : 1.0.0
+# Version    : 1.0.1
 # Date       : 2020-10-27
-# Purpose    : Check if all py38 packages also exists as py39.
+# Purpose    : Check if all py38 packages also exist as py39
 #######################################################################
 
-echo "Can I upgrade MacPorts from Python 3.8 to 3.9?"
-echo "Installed for py38, missing for py39:"
+SEARCH='py38'
+REPLACE='py39'
 
-# Initialise
+echo "MacPorts packages installed for ${SEARCH}, missing for ${REPLACE}:"
+
 PRESENT=0
 MISSING=0
 
-# List all py38 packages and change to py39
-for NAME in $(port installed | grep -F 'py38' | awk '{print $1}' | sed 's/py38/py39/')
+for NAME in $(port installed | grep -F "${SEARCH}" | awk '{print $1}' | sed "s/${SEARCH}/${REPLACE}/")
 do
-	RESULT=$(port search "$NAME")      # info starts with package name if found
-	MATCH=$(expr "$RESULT" : "$NAME")  # length of match from start
-	if (( MATCH == ${#NAME} )); then   # name found at start of string
-		(( PRESENT++ ))                # count packages already present
-	else                               # name not found at start of string
-		(( MISSING++ ))                # count packages still missing
-		echo "$NAME"                   # show missing package
+
+	# Search result will show package name at the start if found
+	if port search "${NAME}" | grep -q "^${NAME}"; then
+		(( PRESENT++ ))
+	else
+		(( MISSING++ ))
+		echo "${NAME}"  # show missing package
 	fi
+
 done
 
-# Summary
 echo
-echo "Missing: $MISSING"
-echo "Present: $PRESENT"
+echo "Present: ${PRESENT}"
+echo "Missing: ${MISSING}"
