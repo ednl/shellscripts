@@ -6,19 +6,17 @@
 # Requires   : bash, MacPorts, grep, awk, sed
 # Location   : ~/bin/, /usr/local/bin
 # Name       : macportsmissing
-# Version    : 1.0.1
-# Date       : 2020-10-27
+# Version    : 1.0.2
+# Date       : 2020-10-30
 # Purpose    : Check if all py38 packages also exist as py39
 #######################################################################
 
 SEARCH='py38'
 REPLACE='py39'
-
-echo "MacPorts packages installed for ${SEARCH}, missing for ${REPLACE}:"
-
 PRESENT=0
 MISSING=0
 
+echo "MacPorts packages installed for ${SEARCH}, missing for ${REPLACE}:"
 for NAME in $(port installed | grep -F "${SEARCH}" | awk '{print $1}' | sed "s/${SEARCH}/${REPLACE}/")
 do
 
@@ -31,7 +29,15 @@ do
 	fi
 
 done
-
 echo
-echo "Present: ${PRESENT}"
-echo "Missing: ${MISSING}"
+
+if (( MISSING > 0 )); then
+	echo "Present: ${PRESENT}"
+	echo "Missing: ${MISSING}"
+	echo "To test which installed ports recursively depend on '${SEARCH}-example', use:"
+	echo "    port rdependents ${SEARCH}-example"
+elif (( PRESENT > 0 )); then
+	echo "All ${PRESENT} installed ${SEARCH} ports are available for ${REPLACE}."
+else
+	echo "No ports are installed for ${SEARCH}."
+fi
