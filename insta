@@ -3,7 +3,7 @@
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
 # Platform   : macOS
-# Requires   : bash, grep, curl, file, open
+# Requires   : bash, GNU grep, curl, file, open
 # Location   : ~/bin, /usr/local/bin
 # Name       : insta
 # Version    : 1.0.0
@@ -21,7 +21,7 @@ PAGE=$(echo "$1" | grep -oE 'https://www\.instagram\.com/p/[^/]+/')
 [ -z "$PAGE" ] && { echo 'Argument is not an Instagram page URL.' 2>&1; exit 2; }
 
 SAVE=$(echo "$PAGE" | cut -d/ -f5)
-URLS=$(curl -s "$PAGE?__a=1" | grep -oE '[^{]*1080[^}]*' | grep -oE 'https[^"]*' | grep -Fv 's150x150' | uniq)
+URLS=$(curl -A 'Just another browser' -s "$PAGE?__a=1" | grep -oE '[^{]*1080[^}]*' | grep -oE 'https[^"]*' | grep -Fv 's150x150' | uniq)
 N=$(echo "$URLS" | wc -l | xargs)
 if (( N == 1 )); then
     ARG="-o $SAVE.jpg"
@@ -36,7 +36,7 @@ else
     exit 3
 fi
 
-curl -s $ARG $URLS
+curl -A 'Just another browser' -s $ARG $URLS
 
 if (( N == 1 )); then
     if [ -f "$SAVE.jpg" -a -r "$SAVE.jpg" ]; then
