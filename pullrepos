@@ -7,8 +7,8 @@
 # Requires   : bash, git, curl, cut, sed, xargs
 # Location   : ~/bin/
 # Name       : pullrepos
-# Version    : 1.0.1
-# Date       : 2020-01-17
+# Version    : 1.0.2
+# Date       : 2021-03-01
 # Purpose    : Update GitHub repositories. Clone if not found locally.
 # Parameters : none
 # Settings   : GITPAT = GitHub personal access token with read access
@@ -38,7 +38,7 @@ echo "Git directory  : $BASE"
 LOGIN=$(curl -s -H "Authorization: bearer $GITPAT" -X POST -d "{\"query\":\"{viewer{login}}\"}" https://api.github.com/graphql | cut -d'"' -f8)
 PROFILE="https://github.com/$LOGIN"
 CLONE="https://${GITPAT}@github.com/$LOGIN"
-REPOS=$(curl -s -H "Authorization: bearer $GITPAT" -X POST -d "{\"query\":\"{viewer{repositories(first:100,orderBy:{field:NAME,direction:ASC}){nodes{name}}}}\"}" https://api.github.com/graphql | cut -d'[' -f2 | sed -E 's/,/\n/g' | cut -d'"' -f4 | xargs)
+REPOS=$(curl -s -H "Authorization: bearer $GITPAT" -X POST -d "{\"query\":\"{viewer{repositories(first:100,orderBy:{field:NAME,direction:ASC}){nodes{name}}}}\"}" https://api.github.com/graphql | cut -d'[' -f2 | sed 'y/,/\n/' | cut -d'"' -f4 | xargs)
 
 echo "GitHub profile : $PROFILE"
 echo "Repositories   : $REPOS"
