@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+APP=git
+[ ! -x "$APP" ] && { echo "Executable '$APP' not found" >&2; exit 1; }
+
+BASE=~/picox
+if [ ! -d "$BASE" ]; then
+	read -p "Create directory '$BASE'? [y] " -n 1 -r
+	[ -n "$REPLY" ] && echo
+	[ -z "$REPLY" ] && REPLY=y
+	if [[ ! "$REPLY" =~ ^[yYjJ]$ ]]; then
+		echo 'Bye.'
+		exit 0
+	fi
+	if ! mkdir -p "$BASE"; then
+		echo "Failed to create directory '$BASE'" >&2
+		exit 1
+	fi
+fi
+
+DIRS="pico-sdk pico-examples pico-micropython-examples pico-extras pico-playground pico-project-generator pico-setup picotool picoprobe pico-tflmicro"
+
+echo "go"
+exit 0
+
+for DIR in "$BASE/$PREFIX"*; do
+	if [ -d "$DIR" -a -r "$DIR" -a -w "$DIR" -a -x "$DIR" ]; then
+		NAME=$(basename "$DIR")
+		cd "$DIR"
+		echo "############### $NAME ###############"
+		echo
+		echo "$APP" pull -v --all --stat
+		#"$APP" pull -v --all --stat
+		if [ "$NAME" = "pico-sdk" ]; then
+			echo "git submodule update --init"
+			#"$APP" submodule update --init
+		fi
+		echo
+		cd - &>/dev/null
+	fi
+done
