@@ -59,7 +59,8 @@ for repo in $REPOS; do
 		if [ -d "$repo" -a -r "$repo" -a -w "$repo" -a -x "$repo" ]; then
 			if [ -d "${repo}/.git" ]; then
 				cd "$repo"
-				git remote -v update -p
+				# git remote -v update -p
+				git pull -v --all --stat
 				cd ..
 			else
 				echo "Not a git repository: ${BASE}/${repo}" >&2
