@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+APP=wget
+FOUND=$(which $APP)
+[ -z "$FOUND" ] && { echo "Program not found: $APP" >&2; exit 1; }
+
+DOCDIR=$HOME/pico/docs
+[ ! -d "$DOCDIR" ] && { echo "Directory not found: $DOCDIR" >&2; exit 2; }
+
+CURDIR=$(pwd)
+BASE="https://datasheets.raspberrypi.org/"
+EXT=".pdf"
+
+cd "$DOCDIR"
+for FNAME in \
+	"pico/getting-started-with-pico" \
+	"pico/raspberry-pi-pico-c-sdk" \
+	"pico/pico-datasheet" \
+	"rp2040/rp2040-datasheet"
+do
+	echo
+	echo "     $(basename $FNAME)"
+	echo
+	$APP -N -nv --show-progress "$BASE$FNAME$EXT"
+done
+cd "$CURDIR"
+
+echo
+echo "Files saved to $DOCDIR"
+echo
+exit 0
