@@ -15,10 +15,6 @@
 #    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 #        -keyout ~/.jupyter/mykey.key -out ~/.jupyter/mycert.pem
 #
-#  Requirements:
-#    GNU grep as ggrep (install via MacPorts)
-#    GNU awk as gawk (install via MacPorts)
-#
 #  Exit status:
 #     0: No error
 #     1: Cannot access ~/.jupyter
@@ -35,12 +31,15 @@
 #    12: No IPv4 address found
 #    13: Invalid IPv4 address
 #
-#  Version : 1.1
-#  Date    : 2021-04-28
+#  Version : 1.2
+#  Date    : 2021-05-16
 #  Author  : E. Dronkert https://github.com/ednl
-#  License : MIT (free to use with attribution to the author)
+#  License : MIT (free to use in any way, attribution to author appreciated)
 #
 ###############################################################################
+
+APP_MACOS=jupyter-notebook-3.9
+APP_LINUX=jupyter-notebook
 
 PORT=8888
 DIR=~/.jupyter
@@ -82,12 +81,12 @@ if [ "$1" = "start" ]; then
 	[ ! -e "$PID" -o -w "$PID" ] || { echo "Cannot write to PID file: $PID" >&2; exit 9; }
 
 	if [ "$SYST" = "Linux" ]; then
-		APP=jupyter-notebook
-		IP=$(ip -4 -br a | ggrep UP | head -n 1 | gawk '{print $3}' | cut -d'/' -f1)
+		APP=$APP_LINUX
+		IP=$(ip -4 -br a | grep UP | head -n 1 | awk '{print $3}' | cut -d'/' -f1)
 	elif [ "$SYST" = "Darwin" ]; then
-		APP=jupyter-notebook-3.9
-		INTF=$(ifconfig | ggrep '^en.*<UP' | head -n 1 | cut -d':' -f1)
-		IP=$(ifconfig "$INTF" inet | tail -n 1 | gawk '{print $2}')
+		APP=$APP_MACOS
+		INTF=$(ifconfig | grep '^en.*<UP' | head -n 1 | cut -d':' -f1)
+		IP=$(ifconfig "$INTF" inet | tail -n 1 | awk '{print $2}')
 	else
 		echo "Unknown operating system: $SYST" >&2
 		exit 10
@@ -97,7 +96,7 @@ if [ "$1" = "start" ]; then
 	[ -n "$(which ${APP})" ] || { echo "App not found: $APP" >&2; exit 11; }
 
 	[ -z "$IP" ] && { echo "No IPv4 address found" >&2; exit 12; }
-	echo "$IP" | ggrep -q -s -P '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$' || { echo "Invalid IPv4 address: $IP" >&2; exit 13; }
+	echo "$IP" | grep -q -s -E '^[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}\.[[:digit:]]{1,3}$' || { echo "Invalid IPv4 address: $IP" >&2; exit 13; }
 
 	echo -n "Starting Jupyter Notebook server ... "
 	#$APP > "$LOG" 2>&1 &
