@@ -16,7 +16,12 @@ for FNAME in \
 	"pico/getting-started-with-pico" \
 	"pico/raspberry-pi-pico-c-sdk" \
 	"pico/pico-datasheet" \
-	"rp2040/rp2040-datasheet"
+	"pico/raspberry-pi-pico-python-sdk" \
+	"pico/raspberry-pi-pico-faq" \
+	"pico/Pico-R3-A4-Pinout" \
+	"pico/pico-product-brief" \
+	"rp2040/rp2040-datasheet" \
+	"rp2040/hardware-design-with-rp2040"
 do
 	echo
 	echo "     $(basename $FNAME)"
