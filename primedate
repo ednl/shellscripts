@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+###############################################################################
+#
+#  Show all prime dates in a year where the date is formatted as YYYYMMDD.
+#  Use current year or the one provided as a command line parameter.
+#
+#  Version : 1.0
+#  Date    : 2021-05-24
+#  Author  : E. Dronkert https://github.com/ednl
+#  License : MIT (free to use in any way, attribution to author appreciated)
+#
+###############################################################################
+
+# Either Darwin (=MacOS) or Linux
+OS=$(uname -s)
+
+# Use commandline parameter or current year
+year=
+if [ -n "$1" ]; then
+    # Sanity check
+    if [ ${#1} -eq 4 ]; then
+        # Valid range for BSD date
+        if (( "$1" >= 1900 && "$1" <= 9999 )); then
+            year=$1
+        fi
+    fi
+fi
+if [ -z "$year" ]; then
+    year=$(date +%Y)
+fi
+echo "Prime dates of the year $year:"
+
+# Test if number is prime
+function isprime () {
+    declare -i number=$1
+    # Weed out small and even numbers
+    (( number <= 1 )) && return 1   # False
+    (( number <= 3 )) && return 0   # True
+    ! (( number % 2 )) && return 1  # False
+
+    # Test odd factors up to the square root of n
+    # sq0 = f^2
+    # sq1 = (f+2)^2 = f^2 + 4f + 4 = sq0 + 4(f+1)
+    declare -i factor=3
+    declare -i square=9
+    while (( square <= number ))
+    do
+        ! (( number % factor )) && return 1
+        (( ++factor ))
+        (( square += 4 * factor ))
+        (( ++factor ))
+    done
+    return 0
+}
+
+# Try every day in the year, if prime then count and show localised
+n=0
+cur="${year}0101"
+end="$((year + 1))0101"
+while [ "$cur" != "$end" ]; do
+    # Is it prime?
+    if isprime "$cur"; then
+        (( ++n ))
+        printf "%2u. $cur = " $n
+        if [ "$OS" = "Darwin" ]; then
+            date -jf %Y%m%d $cur +'%a %e %b'
+        elif [ "$OS" = "Linux" ]; then
+            date -d $cur +'%a %e %b'
+        fi
+    fi
+    # Next day
+    if [ "$OS" = "Darwin" ]; then
+        # Via Unix time because BSD date is not as flexible
+        unix=$(date -jf %Y%m%d $cur +%s)
+        cur=$(date -jr $unix -v+1d +%Y%m%d)
+    elif [ "$OS" = "Linux" ]; then
+        cur=$(date -d "$cur +1 day" +%Y%m%d)
+    fi
+done
+exit 0
