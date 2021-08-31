@@ -1,31 +1,44 @@
 #!/usr/bin/env bash
 
-###########################################################################
+###############################################################################
 # Made by    : Ewoud Dronkert
 # Licence    : GNU GPL v3
 # Platform   : Raspberry Pi, Raspbian
-# Requires   : bash, curl, convert, ffmpeg, rsync, mail,
+# Requires   : bash, curl, convert, ffmpeg, rsync, mail (msmtp),
 #              remote server with ssh key access
 # Location   : /usr/local/bin
 # Name       : temperatuur
-# Version    : 1.0.1
-# Date       : 2018-04-23
+# Version    : 1.0.2
+# Date       : 2021-08-31
 # Purpose    : Download new KNMI temperature chart every 20 minutes, make
 #              daily video of collected images, upload to webserver.
 # How to use : Start as a system service
 #              or from /etc/rc.local as "temperatuur &"
 #              or from the command line as "sudo nohup temperatuur &"
 # Settings   : DATA = web location of fresh image file
-#              SAVE = local directory for saving images and videos
-#              SRV = remote server (plus user and directory)
+#              LDIR = local directory for saving images and videos
 #              ID = SSH key for access to remote server
-###########################################################################
+#              RUSER/RHOST/RDIR = server info
+#              TONAME/TOADDR = email info
+#              URL = public address of the video directory
+###############################################################################
 
-DATA='http://cdn.knmi.nl/knmi/map/page/weer/actueel-weer/temperatuur.png'
-SAVE='/home/pi/knmi/'                  # Local directory
+DATA='https://cdn.knmi.nl/knmi/map/page/weer/actueel-weer/temperatuur.png'
+LDIR='/home/pi/knmi/'      # Local directory on the Pi running this script
+ID='/home/pi/.ssh/id_rsa'  # SSH key with access to the server
 
-SRV='ewoud@shell.xs4all.nl:WWW/knmi/'  # Where to upload the video
-ID='/home/pi/.ssh/id_rsa'              # SSH key
+RUSER=''                 # Username with ssh access to the server
+RHOST='shell.xs4all.nl'  # Server with ssh/scp/rsync access
+RDIR='WWW/knmi/'         # Remote directory on the server, relative to ssh login
+
+FROMNAME='Pi Home'  # Sender name to use on the new video notification mail
+TONAME=''           # Recipient name to use on the new video notification mail
+TOADDR=''           # Where to send the new video notification mail
+
+URL="https://$RUSER.home.xs4all.nl/knmi/"
+SRV="$RUSER@$RHOST:$RDIR"   # Where to upload the video
+
+###############################################################################
 
 PRE='img-'  # To distinguish from downloaded files when removing
 FMT='%03d'  # Three digit format 000-999 needed for 6*24=144 images per day
@@ -43,37 +56,37 @@ while true; do
 
 		# Count number of saved image files from yesterday
 		# Ignore error if none found
-		n=$(ls "$SAVE$YDAY"*"$SUF" 2>/dev/null | wc -l)
+		n=$(ls "$LDIR$YDAY"*"$SUF" 2>/dev/null | wc -l)
 
 		if (( n == 1 )); then
 
 			# Just one image from yesterday, might as well upload it I guess
-			SRC=$(ls "$SAVE$YDAY"*"$SUF")
+			SRC=$(ls "$LDIR$YDAY"*"$SUF")
 			DST="temperatuur-$YDAY$SUF"
 			rsync -qau -e "ssh -i '$ID'" "$SRC" "$SRV$DST"
-			mv -f "$SRC" "$SAVE$DST"
+			mv -f "$SRC" "$LDIR$DST"
 
 		elif (( n > 1 )); then
 
 			# Delete all image (but not video) files older than yesterday
-			#FIRST=$(ls "$SAVE$YDAY"*"$SUF" | head -n1)
+			#FIRST=$(ls "$LDIR$YDAY"*"$SUF" | head -n1)
 			#KEEP=$(basename "$FIRST")
-			#find "$SAVE" -maxdepth 1 -type f -name "*$SUF" ! -newer "$FIRST" ! -name "$KEEP" -delete
+			#find "$LDIR" -maxdepth 1 -type f -name "*$SUF" ! -newer "$FIRST" ! -name "$KEEP" -delete
 
 			# Make room for new sequential files, delete the old ones
-			rm -f "$SAVE$PRE"*"$SUF"
+			rm -f "$LDIR$PRE"*"$SUF"
 
 			# Rename yesterday's files sequentially
 			i=0
-			for f in "$SAVE$YDAY"*"$SUF"; do
-				mv -f "$f" "$SAVE$PRE$(printf $FMT $i)$SUF"
+			for f in "$LDIR$YDAY"*"$SUF"; do
+				mv -f "$f" "$LDIR$PRE$(printf $FMT $i)$SUF"
 				(( ++i ))
 			done
 
 			# Make video from sequential files
 			VIDNAME="temperatuur-$YDAY.mp4"
-			VID="$SAVE$VIDNAME"
-			ffmpeg -y -r 8 -i "$SAVE$PRE$FMT$SUF" -an -r 8 -s $DIM -c:v libx264 -pix_fmt yuv420p "$VID" &>/dev/null
+			VID="$LDIR$VIDNAME"
+			ffmpeg -y -hide_banner -r 8 -i "$LDIR$PRE$FMT$SUF" -an -r 8 -s $DIM -c:v libx264 -pix_fmt yuv420p "$VID" &>/dev/null
 
 			# Process video if it exists
 			if [[ -e "$VID" && -f "$VID" && -r "$VID" && -s "$VID" ]]; then
@@ -82,7 +95,7 @@ while true; do
 				chown pi:pi "$VID"
 
 				# Delete just processed files
-				#rm -f "$SAVE$PRE"*"$SUF"
+				#rm -f "$LDIR$PRE"*"$SUF"
 
 				# Upload, 3 tries
 				for i in {1..3}; do
@@ -90,9 +103,8 @@ while true; do
 				done
 
 				# Send mail notification of new video
-				URL='https://ewoud.home.xs4all.nl/knmi/'
-				MAIL="To: Ewoud Dronkert <ewoud@dronkert.net>
-From: ED Home
+				MAIL="To: $TONAME <$TOADDR>
+From: $FROMNAME
 Subject: Nieuwe temperatuurvideo
 
 Nieuwe temperatuurvideo:
@@ -100,9 +112,9 @@ $URL$VIDNAME
 
 Oudere video's staan op $URL
 
--- 
+--
 Dit is een automatisch verstuurde e-mail. Uw antwoord wordt niet gelezen."
-				echo "$MAIL" | ssmtp -t
+				echo "$MAIL" | msmtp -t
 
 			fi
 		fi
@@ -117,7 +129,7 @@ Dit is een automatisch verstuurde e-mail. Uw antwoord wordt niet gelezen."
 	sleep ${N}m                                  # sleep N minutes
 
 	# Get KNMI temperature chart
-	FILE="$SAVE$(date +%Y%m%d%H%M)$SUF"
+	FILE="$LDIR$(date +%Y%m%d%H%M)$SUF"
 	curl -s "$DATA" > "$FILE"
 	if [ -e "$FILE" ]; then
 		if [ -s "$FILE" ]; then

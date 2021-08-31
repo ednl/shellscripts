@@ -8,8 +8,8 @@
 #              for notification: mail, locally configured mail system
 # Location   : /usr/local/bin
 # Name       : knmi
-# Version    : 2.0.0
-# Date       : 2017-06-07
+# Version    : 2.0.1
+# Date       : 2021-08-31
 # Purpose    : Download new KNMI temperature & wind charts every 10
 #              minutes, make daily video of collected images, upload
 #              to web server, send notification mail.
@@ -23,8 +23,8 @@
 #              ID = SSH key with access to remote server
 ###########################################################################
 
-SRC1='http://cdn.knmi.nl/knmi/map/page/weer/actueel-weer/temperatuur.png'
-SRC2='http://cdn.knmi.nl/knmi/map/page/weer/actueel-weer/windkracht.png'
+SRC1='https://cdn.knmi.nl/knmi/map/page/weer/actueel-weer/temperatuur.png'
+SRC2='https://cdn.knmi.nl/knmi/map/page/weer/actueel-weer/windkracht.png'
 SAVE='/home/pi/knmi/'                  # Local working directory
 
 SRV='xxxxx@xxxxx.xxxxxx.xx:xxx/xxxx/'  # Where to upload the video
@@ -80,7 +80,7 @@ while true; do
 			# Make video from sequential files
 			VIDNAME="temperatuur-$YDAY.mp4"
 			VID="$SAVE$VIDNAME"
-			avconv -y -r 4 -i "$SAVE$PRE$FMT$SUF" -an -r 4 -s $DIM -c:v libx264 "$VID" &>/dev/null
+			ffmpeg -y -hide_banner -r 8 -i "$LDIR$PRE$FMT$SUF" -an -r 8 -s $DIM -c:v libx264 -pix_fmt yuv420p "$VID" &>/dev/null
 
 			# Process video if it exists
 			if [[ -e "$VID" && -f "$VID" && -r "$VID" && -s "$VID" ]]; then
@@ -97,17 +97,21 @@ while true; do
 				done
 
 				# Send mail notification of new video
-				ADMIN="xxxxx@xxxxxxxx.xxx"
-				TO="$ADMIN"
-				URL="https://xxxxx.xxxx.xxxxxx.xx/xxxx/"
-				BODY="Nieuwe temperatuurvideo:
+				TONAME=''
+				TOADDR=''
+				FROMNAME=''
+				MAIL="To: $TONAME <$TOADDR>
+From: $FROMNAME
+Subject: Nieuwe temperatuurvideo
+
+Nieuwe temperatuurvideo:
 $URL$VIDNAME
 
 Oudere video's staan op $URL
 
--- 
-Dit is een automatisch verstuurde e-mail."
-				echo "$BODY" | mail -s "Nieuwe temperatuurvideo" -r "$ADMIN" "$TO"
+--
+Dit is een automatisch verstuurde e-mail. Uw antwoord wordt niet gelezen."
+				echo "$MAIL" | msmtp -t
 
 			fi
 		fi
@@ -132,9 +136,20 @@ Dit is een automatisch verstuurde e-mail."
 	# Get KNMI temperature chart
 	FILE="$SAVE$(date +%Y%m%d%H%M)$SUF"
 	if curl -s "$DATA" > "$FILE"; then
-		convert "$FILE" -define png:color-type=2 -gravity center -extent $DIM "$FILE"
-		chmod 644 "$FILE"
-		chown pi:pi "$FILE"
+		if [ -e "$FILE" ]; then
+			if [ -s "$FILE" ]; then
+				ISPNG=$(file "$FILE" | grep -F 'PNG image')
+				if [ -n "$ISPNG" ]; then
+					convert "$FILE" -strip -define png:color-type=2 -gravity center -extent $DIM "$FILE"
+					chmod 644 "$FILE"
+					chown pi:pi "$FILE"
+				else
+					rm -f "$FILE"
+				fi
+			else
+				rm -f "$FILE"
+			fi
+		fi
 	fi
 
 done
