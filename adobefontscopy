@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+# Inspired by https://github.com/Kalaschnik/adobe-fonts-revealer
+
+[ -z "$(which otfinfo)" ] && { echo "App not found: otfinfo. Install: sudo port install lcdf-typetools" >&2; exit 1; }
+
+SRC="$HOME/Library/Application Support/Adobe/CoreSync/plugins/livetype/.r"
+[ -e "$SRC" -a -d "$SRC" -a -r "$SRC" ] || { echo "Directory not found: $SRC" >&2; exit 2; }
+cd "$SRC"
+
+N=$(ls .*.otf | wc -l | xargs)
+(( N == 0 )) && { echo "No Adobe fonts found." >&2; exit 3; }
+echo
+echo "Adobe fonts found: $N"
+echo
+
+DST="$HOME/Archief/Fonts/Adobe"
+mkdir -p "$DST"
+[ -e "$DST" -a -d "$DST" -a -w "$DST" ] || { echo "Directory not found: $DST" >&2; exit 4; }
+
+M=0
+for F in .*.otf; do
+	P=$(otfinfo --info "$F" | fgrep 'PostScript name:' | awk '{print $NF}')
+	if [ -n "$P" ]; then
+		G="$P.otf"
+		if cp -pn "$F" "$DST/$G"; then
+			echo $'\t'"$F => $G"
+			(( M++ ))
+		else
+			echo $'\t'"Already exists: $G"
+		fi
+	fi
+done
+echo
+echo "New fonts copied: $M"
+echo
+
+open "$DST"
