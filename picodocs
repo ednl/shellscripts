@@ -4,7 +4,8 @@ APP=wget
 FOUND=$(which $APP)
 [ -z "$FOUND" ] && { echo "Program not found: $APP" >&2; exit 1; }
 
-DOCDIR=$HOME/pico/docs
+DOCDIR=~/pico/docs
+[ ! -d "$DOCDIR" ] && mkdir -p "$DOCDIR" && echo "Directory created: $DOCDIR"
 [ ! -d "$DOCDIR" ] && { echo "Directory not found: $DOCDIR" >&2; exit 2; }
 
 CURDIR=$(pwd)
@@ -33,4 +34,6 @@ cd "$CURDIR"
 echo
 echo "Files saved to $DOCDIR"
 echo
+open "$DOCDIR"
+
 exit 0
