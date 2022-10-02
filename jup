@@ -31,14 +31,14 @@
 #    12: No IPv4 address found
 #    13: Invalid IPv4 address
 #
-#  Version : 1.2
-#  Date    : 2021-05-16
+#  Version : 1.2.1
+#  Date    : 2022-10-01
 #  Author  : E. Dronkert https://github.com/ednl
 #  License : MIT (free to use in any way, attribution to author appreciated)
 #
 ###############################################################################
 
-APP_MACOS=jupyter-notebook-3.9
+APP_MACOS=jupyter-notebook-3.10
 APP_LINUX=jupyter-notebook
 
 PORT=8888
