@@ -1,0 +1,26 @@
+include "/opt/local/share/nano/*.nanorc"
+
+#set autoindent
+unset breaklonglines
+unset emptyline
+set indicator
+unset jumpyscrolling
+#set linenumbers
+#set mouse
+set quickblank
+set smarthome
+unset softwrap
+set tabsize 4
+set trimblanks
+
+set titlecolor bold,white,blue
+#set promptcolor lightwhite,grey
+set statuscolor bold,white,green
+set errorcolor bold,white,red
+#set spotlightcolor black,lightyellow
+set selectedcolor lightwhite,magenta
+set stripecolor ,yellow
+set scrollercolor cyan
+set numbercolor cyan
+set keycolor bold,white,blue
+set functioncolor white,blue

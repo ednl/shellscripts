@@ -1,4 +1,4 @@
-# For macOS
+# MacOS version, not Linux !
 
 # Load .profile, containing login, non-bash related initializations.
 if [ -f ~/.profile ]; then

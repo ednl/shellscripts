@@ -20,8 +20,14 @@ function GetSep() {
 	[ -z "$1" ] && return 1
 	DEFFILE="/usr/share/i18n/locales/$1"
 	[ ! -f "$DEFFILE" ] && return 2
-	UNICODE=$(cat "$DEFFILE" | grep ^decimal_point | cut -d'<' -f2 | cut -d'>' -f1)
-	echo -ne "\\$UNICODE"
+	[ ! -r "$DEFFILE" ] && return 3
+	SYMBOL=$(cat "$DEFFILE" | grep ^decimal_point | awk '{print $2}' | sed -E 's/^"|"$//g')
+	if [ "${SYMBOL:0:2}" == "<U" ]; then
+		UNICODE=$(echo "$SYMBOL" | sed -E 's/^<|>$//g')
+		echo -ne "\\$UNICODE"
+	else
+		echo -n "$SYMBOL"
+	fi
 	return 0
 }
 
