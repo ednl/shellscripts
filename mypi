@@ -92,6 +92,8 @@ case "$id" in
 
 	a020d3 ) n='3B+'; b='1.3'; d='Q1 2018'; p='Sony';;
 
+	c03111 ) n='4B'; b='1.1'; d='Q1 2019'; p='Sony';;
+
 	* ) n='(unknown)'; b='(unknown)'; d='(unknown)'; p='(unknown)';;
 esac
 
