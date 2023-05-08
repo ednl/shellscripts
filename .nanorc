@@ -1,9 +1,0 @@
-include "/opt/local/share/nano/*.nanorc"
-# set autoindent
-set morespace
-# set mouse
-unset softwrap
-set nowrap
-set smarthome
-set smooth
-set tabsize 4

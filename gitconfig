@@ -1,0 +1,16 @@
+[user]
+	name = E. Dronkert
+	email = ednl@users.noreply.github.com
+[color]
+	ui = auto
+[pull]
+	rebase = false
+[filter "lfs"]
+	process = git-lfs filter-process
+	required = true
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+[init]
+	defaultBranch = main
+[core]
+	excludesfile = /Users/ewoud/.config/git/ignore
