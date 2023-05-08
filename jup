@@ -38,9 +38,7 @@
 #
 ###############################################################################
 
-APP_MACOS=jupyter-notebook-3.9
-APP_LINUX=jupyter-notebook
-
+APP=jupyter-notebook
 PORT=8888
 DIR=~/.jupyter
 CER="$DIR/mycert.pem"
@@ -81,11 +79,9 @@ if [ "$1" = "start" ]; then
 	[ ! -e "$PID" -o -w "$PID" ] || { echo "Cannot write to PID file: $PID" >&2; exit 9; }
 
 	if [ "$SYST" = "Linux" ]; then
-		APP=$APP_LINUX
 		IP=$(ip -4 -br a | grep UP | head -n 1 | awk '{print $3}' | cut -d'/' -f1)
 	elif [ "$SYST" = "Darwin" ]; then
-		APP=$APP_MACOS
-		INTF=$(ifconfig | grep '^en.*<UP' | head -n 1 | cut -d':' -f1)
+		INTF=$(ifconfig | grep '^en.*<UP' | grep 'RUNNING' | sort | head -n 1 | cut -d':' -f1)
 		IP=$(ifconfig "$INTF" inet | tail -n 1 | awk '{print $2}')
 	else
 		echo "Unknown operating system: $SYST" >&2
