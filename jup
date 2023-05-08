@@ -31,10 +31,10 @@
 #    12: No IPv4 address found
 #    13: Invalid IPv4 address
 #
-#  Version : 1.2.1
-#  Date    : 2022-10-01
+#  Version : 1.3
+#  Date    : 2023-05-08
 #  Author  : E. Dronkert https://github.com/ednl
-#  License : MIT (free to use in any way, attribution to author appreciated)
+#  License : MIT (free to use in any way; attribution to author appreciated)
 #
 ###############################################################################
 
