@@ -1,0 +1,88 @@
+#!/bin/sh
+
+# Exit codes:
+#  0: VPN is up (success) or user is not root
+#  1: no network, like, at all
+#  2: vpn server unreachable
+#  3: vpnc not running
+#  4: no local endpoint for vpn
+#  5: no remote endpoint for vpn
+#  6: vpnc could not be (re-) started
+
+# Needed to test network
+SERVER=placeholder_for_my_vpn_server.net
+
+# VPN as configured by vpnc
+VPN_PID=
+VPN_LAN=
+VPN_WAN=
+
+[ "$1" = "-d" -o "$1" = "--debug" ] && DEBUG=1 || DEBUG=
+
+vpn_pid () {
+	[ "$DEBUG" ] && echo -n 'Getting PID ... ' >&2
+	VPN_PID=$(/usr/bin/pgrep -xf '/usr/sbin/vpnc home.conf' 2>/dev/null)
+	[ -z "$VPN_PID" ] && VPN_PID=$(/usr/bin/pgrep -xf 'vpnc home.conf' 2>/dev/null)
+	[ -z "$VPN_PID" ] && VPN_PID=$(/usr/bin/pgrep -f 'vpnc home.conf' 2>/dev/null)
+	[ -z "$VPN_PID" ] && VPN_PID=$(/usr/bin/pgrep 'vpnc' 2>/dev/null)
+	[ "$DEBUG" ] && echo "$VPN_PID" >&2
+	[ -n "$VPN_PID" ] && RET=0 || RET=3
+	return $RET
+}
+
+vpn_lan () {
+	[ "$DEBUG" ] && echo -n 'Getting LAN ... ' >&2
+	VPN_LAN=$(/usr/sbin/ip -o -c=never a show up scope global dev tun0 2>/dev/null | /usr/bin/awk '{print $4}' | /usr/bin/cut -d/ -f1)
+	[ "$DEBUG" ] && echo "$VPN_LAN" >&2
+	[ -n "$VPN_LAN" ] && RET=0 || RET=4
+	return $RET
+}
+
+vpn_wan () {
+	[ "$DEBUG" ] && echo -n 'Getting WAN ... ' >&2
+	VPN_WAN=$(/usr/bin/curl -s --connect-timeout 3 --interface tun0 'https://ipecho.net/plain' 2>/dev/null)
+	[ "$DEBUG" ] && echo "$VPN_WAN" >&2
+	[ -n "$VPN_WAN" ] && RET=0 || RET=5
+	return $RET
+}
+
+vpn_start () {
+	[ "$DEBUG" ] && echo -n 'Starting VPN ... ' >&2
+	RES=$(/usr/sbin/vpnc home.conf 2>&1)
+	[ $? -eq 0 ] && RET=0 || RET=6
+	[ "$DEBUG" ] && echo "$RES" >&2
+	return $RET
+}
+
+vpn_restart () {
+	[ "$DEBUG" ] && echo -n 'Restarting VPN ... ' >&2
+	RES=$(/usr/sbin/vpnc-disconnect 2>&1)
+	[ "$DEBUG" ] && echo "$RES" >&2
+	T="$1" && [ -z "$T" -o "$T" -lt 1 ] && T=1
+	sleep "$T"
+	vpn_start
+}
+
+if [ "$(/usr/bin/id -u)" -eq 0 ]; then
+	# Has network interface?
+	/usr/bin/ping -c 1 -w 1 -q localhost >/dev/null 2>&1 || exit 1
+
+	# Destination reachable?
+	/usr/bin/ping -c 1 -w 3 -q "$SERVER" >/dev/null 2>&1 || exit 2
+
+	# Test if running, start if not, test again, exit if fail
+	vpn_pid || { vpn_start && vpn_pid || exit $?; }
+
+	# Test for local endpoint, restart if not found, test again, exit if fail
+	vpn_lan || { vpn_restart && vpn_pid && vpn_lan || exit $?; }
+
+	# Test for remote endpoint, slow restart if not found, test again, exit if fail
+	vpn_wan || { vpn_restart 3 && vpn_pid && vpn_lan && vpn_wan || exit $?; }
+
+	# Show working configuration if DEBUG is set
+	[ "$DEBUG" ] && echo "VPN $VPN_PID $VPN_LAN $VPN_WAN" >&2
+else
+	# User is not root: show current configuration
+	vpn_pid && vpn_lan && vpn_wan && echo "VPN up: $VPN_LAN -> $VPN_WAN" || echo 'VPN down'
+fi
+exit 0

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if [ "$(/usr/bin/id -u)" -eq 0 ]; then
+	# Has network interface?
+	/usr/bin/ping -c 1 -w 1 -q localhost >/dev/null 2>&1 || exit 1
+
+	# Check vpn, start if not up, reboot if failed
+	/usr/local/bin/vpnwatchdog || /usr/sbin/reboot
+fi
