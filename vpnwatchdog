@@ -1,30 +1,100 @@
 #!/bin/sh
 
+# Monitor a VPN connection set up by vpnc on Linux
+# with cron and the dash shell.
+#
+# Use as root (with sudo) to check the VPN connection
+# and to try & activate it:
+#   $ sudo vpnwatchdog [-v|--debug]
+#
+# Use as a normal user to check the VPN connection:
+#   $ vpnwatchdog
+# Result is one of:
+#   VPN up: <local IP address> -> <public IP Address>
+#   VPN down
+#
+# Prerequisite: install 'vpnc', for example on Debian and derivatives:
+#   $ sudo apt install vpnc
+#
+# Create a vpnc configuration file. This script assumes that the
+# configuration file is named home.conf, adjust below under 'Constants'.
+#   $ sudo nano /etc/vpnc/home.conf
+#
+# Example configuration to connect to an AVM Fritz!Box modem:
+#   IPSec gateway <server name = fritzbox public name or address>
+#   IPSec ID <user name on fritzbox>
+#   IPSec secret <shared secret from VPN settings for this user>
+#   IKE Authmode psk
+#   Xauth username <user name again>
+#   Xauth password <fritzbox password for user>
+#   local port 0
+#   DPD idle timeout (our side) 0
+#
+# Test the connection:
+#   $ sudo vpnc home.conf
+#   $ ip a
+#   $ sudo vpnc-disconnect
+#
+# Install this script on the system, for example in /usr/local/lib
+# and make it executable:
+#   $ sudo cp vpnwatchdog /usr/local/bin/
+#   $ sudo chmod 755 /usr/local/bin/vpnwatchdog
+#
+# Edit the root user's cron jobs:
+#   $ sudo VISUAL=nano crontab -e
+#
+# Because the script location might not be in the $PATH for cron jobs,
+# use its full path. For example, to check every hour on the 27th minute:
+#   27 * * * * /usr/local/bin/vpnwatchdog
+#
 # Exit codes:
-#  0: VPN is up (success) or user is not root
-#  1: no network, like, at all
-#  2: vpn server unreachable
-#  3: vpnc not running
-#  4: no local endpoint for vpn
-#  5: no remote endpoint for vpn
-#  6: vpnc could not be (re-) started
+#   0 : VPN is up (success) or user is not root
+#   1 : no network, like, at all
+#   2 : vpn server unreachable
+#   3 : vpnc not running
+#   4 : no connection to vpn server
+#   5 : no route to internet via vpn
+#   6 : unable to (re-) start vpnc
+#
+# LIMITATIONS:
+#   Only tested without IPv6. Will probably fail if 'ip' returns
+#     multiple addresses.
+#   System might have multiple VPN connections tun1, tun2, etc.
+#     Will fail if the VPN connection to be monitored is not the
+#     same as the one defined under 'Constants'.
 
-# Needed to test network
-SERVER=placeholder_for_my_vpn_server.net
+# Constants
+MYSERV='<my vpn server>'
+MYCONF='home.conf'
+MYINTF='tun0'
+MYADDR='https://ipecho.net/plain'
 
-# VPN as configured by vpnc
+# Program locations
+ID='/usr/bin/id'
+PING='/usr/bin/ping'
+PGREP='/usr/bin/pgrep'
+AWK='/usr/bin/awk'
+CUT='/usr/bin/cut'
+CURL='/usr/bin/curl'
+SLEEP='/usr/bin/sleep'
+IP='/usr/sbin/ip'
+VPNC='/usr/sbin/vpnc'
+VPND='/usr/sbin/vpnc-disconnect'
+
+# Variables
 VPN_PID=
 VPN_LAN=
 VPN_WAN=
 
-[ "$1" = "-d" -o "$1" = "--debug" ] && DEBUG=1 || DEBUG=
+# Extra info with command line option -v or --debug
+[ "$1" = "-v" -o "$1" = "--debug" ] && DEBUG=1 || DEBUG=
 
 vpn_pid () {
 	[ "$DEBUG" ] && echo -n 'Getting PID ... ' >&2
-	VPN_PID=$(/usr/bin/pgrep -xf '/usr/sbin/vpnc home.conf' 2>/dev/null)
-	[ -z "$VPN_PID" ] && VPN_PID=$(/usr/bin/pgrep -xf 'vpnc home.conf' 2>/dev/null)
-	[ -z "$VPN_PID" ] && VPN_PID=$(/usr/bin/pgrep -f 'vpnc home.conf' 2>/dev/null)
-	[ -z "$VPN_PID" ] && VPN_PID=$(/usr/bin/pgrep 'vpnc' 2>/dev/null)
+	VPN_PID=$($PGREP -xf "$VPNC $MYCONF" 2>/dev/null)
+	[ -z "$VPN_PID" ] && VPN_PID=$($PGREP -xf "vpnc $MYCONF" 2>/dev/null)
+	[ -z "$VPN_PID" ] && VPN_PID=$($PGREP -f "vpnc $MYCONF" 2>/dev/null)
+	[ -z "$VPN_PID" ] && VPN_PID=$($PGREP vpnc 2>/dev/null)
 	[ "$DEBUG" ] && echo "$VPN_PID" >&2
 	[ -n "$VPN_PID" ] && RET=0 || RET=3
 	return $RET
@@ -32,7 +102,7 @@ vpn_pid () {
 
 vpn_lan () {
 	[ "$DEBUG" ] && echo -n 'Getting LAN ... ' >&2
-	VPN_LAN=$(/usr/sbin/ip -o -c=never a show up scope global dev tun0 2>/dev/null | /usr/bin/awk '{print $4}' | /usr/bin/cut -d/ -f1)
+	VPN_LAN=$($IP -o -c=never a show up scope global dev "$MYINTF" 2>/dev/null | $AWK '{print $4}' | $CUT -d/ -f1)
 	[ "$DEBUG" ] && echo "$VPN_LAN" >&2
 	[ -n "$VPN_LAN" ] && RET=0 || RET=4
 	return $RET
@@ -40,7 +110,7 @@ vpn_lan () {
 
 vpn_wan () {
 	[ "$DEBUG" ] && echo -n 'Getting WAN ... ' >&2
-	VPN_WAN=$(/usr/bin/curl -s --connect-timeout 3 --interface tun0 'https://ipecho.net/plain' 2>/dev/null)
+	VPN_WAN=$($CURL -s --connect-timeout 3 --interface "$MYINTF" "$MYADDR" 2>/dev/null)
 	[ "$DEBUG" ] && echo "$VPN_WAN" >&2
 	[ -n "$VPN_WAN" ] && RET=0 || RET=5
 	return $RET
@@ -48,7 +118,7 @@ vpn_wan () {
 
 vpn_start () {
 	[ "$DEBUG" ] && echo -n 'Starting VPN ... ' >&2
-	RES=$(/usr/sbin/vpnc home.conf 2>&1)
+	RES=$($VPNC $MYCONF 2>&1)
 	[ $? -eq 0 ] && RET=0 || RET=6
 	[ "$DEBUG" ] && echo "$RES" >&2
 	return $RET
@@ -56,27 +126,27 @@ vpn_start () {
 
 vpn_restart () {
 	[ "$DEBUG" ] && echo -n 'Restarting VPN ... ' >&2
-	RES=$(/usr/sbin/vpnc-disconnect 2>&1)
+	RES=$($VPND 2>&1)
 	[ "$DEBUG" ] && echo "$RES" >&2
 	T="$1" && [ -z "$T" -o "$T" -lt 1 ] && T=1
-	sleep "$T"
+	$SLEEP "$T"
 	vpn_start
 }
 
-if [ "$(/usr/bin/id -u)" -eq 0 ]; then
+if [ "$($ID -u)" -eq 0 ]; then
 	# Has network interface?
-	/usr/bin/ping -c 1 -w 1 -q localhost >/dev/null 2>&1 || exit 1
+	$PING -c 1 -w 1 -q localhost >/dev/null 2>&1 || exit 1
 
 	# Destination reachable?
-	/usr/bin/ping -c 1 -w 3 -q "$SERVER" >/dev/null 2>&1 || exit 2
+	$PING -c 1 -w 3 -q "$MYSERV" >/dev/null 2>&1 || exit 2
 
 	# Test if running, start if not, test again, exit if fail
 	vpn_pid || { vpn_start && vpn_pid || exit $?; }
 
-	# Test for local endpoint, restart if not found, test again, exit if fail
+	# Test for connection to server, restart if down, test again, exit if fail
 	vpn_lan || { vpn_restart && vpn_pid && vpn_lan || exit $?; }
 
-	# Test for remote endpoint, slow restart if not found, test again, exit if fail
+	# Test for remote endpoint, slow restart if down, test again, exit if fail
 	vpn_wan || { vpn_restart 3 && vpn_pid && vpn_lan && vpn_wan || exit $?; }
 
 	# Show working configuration if DEBUG is set

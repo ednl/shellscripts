@@ -1,9 +1,29 @@
 #!/bin/sh
 
-if [ "$(/usr/bin/id -u)" -eq 0 ]; then
-	# Has network interface?
-	/usr/bin/ping -c 1 -w 1 -q localhost >/dev/null 2>&1 || exit 1
+# Reboot Linux computer with cron job if VPN cannot be activated.
+# Use together with 'vpnwatchdog'.
+#
+# Install this script on the system, for example in /usr/local/lib
+# and make it executable:
+#   $ sudo cp vpnrebootifdown /usr/local/bin/
+#   $ sudo chmod 755 /usr/local/bin/vpnrebootifdown
+#
+# Edit the root user's cron jobs:
+#   $ sudo VISUAL=nano crontab -e
+#
+# Because the script location might not be in the $PATH for cron jobs,
+# use its full path. For example, to check every day at 5.23am:
+#   23 5 * * * /usr/local/bin/vpnrebootifdown
 
-	# Check vpn, start if not up, reboot if failed
-	/usr/local/bin/vpnwatchdog || /usr/sbin/reboot
-fi
+# Must have app, must be executable file
+APP='/usr/local/bin/vpnwatchdog'
+[ -e "$APP" -a -f "$APP" -a -r "$APP" -a -x "$APP" ] || exit 1
+
+# Must be root
+[ "$(/usr/bin/id -u)" -eq 0 ] || exit 2
+
+# Must have network
+/usr/bin/ping -c 1 -w 1 -q localhost >/dev/null 2>&1 || exit 3
+
+# Check vpn & activate if down, reboot if failed
+$APP || /usr/sbin/reboot
