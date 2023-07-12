@@ -17,7 +17,7 @@
 
 # Must have app, must be executable file
 APP='/usr/local/bin/vpnwatchdog'
-[ -e "$APP" -a -f "$APP" -a -r "$APP" -a -x "$APP" ] || exit 1
+[ -e "$APP" ] && [ -f "$APP" ] && [ -r "$APP" ] && [ -x "$APP" ] || exit 1
 
 # Must be root
 [ "$(/usr/bin/id -u)" -eq 0 ] || exit 2
