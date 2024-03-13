@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+###########################################################################
+# Made by    : E. Dronkert
+# Licence    : GNU GPL v3
+# Platform   : MacOS, Raspbian
+# Requires   : bash, sun, date, uname
+# Location   : ~/bin/
+# Name       : gensuntimes
+# Version    : 1.0.0
+# Date       : 2024-03-13
+# Purpose    : Calculate local sunrise, sunset times & daylight duration
+#              for a whole year for several places, save in text files.
+# Parameters : Optional year (default = this year, or next year in Dec.)
+# Settings   : Places on line 63.
+# Output     : Text files 'sun_<place>_<year>.txt' with output of 'sun' for
+#              every day of the year.
+# Exit     0 : No errors
+#          1 : Companion script 'sun' not found
+#          2 : OS is not MacOS or Linux
+###########################################################################
+
+app=$(which sun)
+if [ ! -x "$app" ]; then
+	echo "Program 'sun' not found." >&2
+	exit 1
+fi
+
+# Darwin (macOS) or Linux (Raspbian)
+OS=$(uname)
+if [ "$OS" != "Darwin" -a "$OS" != "Linux" ]; then
+	echo "Unknown operating system: $OS" >&2
+	exit 2
+fi
+
+# Is the first argument a year?
+y=
+if [ -n "$1" ]; then
+	if [ ${#1} -eq 4 ]; then
+		if (( $1 >= 1900 && $1 < 2200 )); then
+			y=$1
+		fi
+	fi
+fi
+
+# No argument or invalid year?
+if [ -z "$y" ]; then
+	# Use current year, next year if December
+	y=$(date +%Y)
+	m=$(date +%m)
+	[ "$m" -eq "12" ] && (( ++y ))
+fi
+
+echo "Calculate sunrise and sunset times for the year $y:"
+
+# Number of days in the year, either 365 or 366
+if [ "$OS" = "Darwin" ]; then
+	n=$(date -j 12310000$y +%j)
+else
+	n=$(date -d $y-12-31 +%j)
+fi
+
+# For different places
+for p in utrecht ouddorp baarn amstelveen; do
+
+	printf '%-15s' "$p"
+	f="sun_${p}_${y}.txt"
+
+	# Test if empty file can be created
+	if [ -e "$f" ]; then
+		if [ ! -f "$f" ]; then
+			echo "Exists but not a file: $f" >&2
+			continue
+		fi
+		if [ ! -w "$f" ]; then
+			echo "Can't overwrite: $f" >&2
+			continue
+		fi
+	fi
+
+	# Start with empty file with the right permissions
+	: 2> /dev/null 1> "$f"
+	chmod -f 600 "$f" &> /dev/null
+
+	# Is it safe?
+	if [ ! -f "$f" -o ! -w "$f" ]; then
+		echo "Could not create: $f" >&2
+		continue
+	fi
+
+	# For every day in the year
+	for (( i = 0; i < n; ++i )); do
+
+		# Date in yyyy-mm-dd format
+		if [ "$OS" = "Darwin" ]; then
+			d=$(date -j -v +${i}d 01010000$y.00 +%Y-%m-%d)
+		else
+			d=$(date -d "$y-01-01 +$i day" -I)
+		fi
+
+		# Progress report
+		[ "${d: -2}" = "01" ] && echo -n '.'
+
+		# sunrise/sunset/daylight times, comma separated
+		t=$(sun -csv $p $d)
+
+		# Add to file
+		echo "$d,$t" >> "$f"
+
+	done
+	echo " $f"
+done

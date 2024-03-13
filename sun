@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-
 ###########################################################################
-# Made by    : Ewoud Dronkert
+# Made by    : E. Dronkert
 # Licence    : GNU GPL v3
 # Platform   : macOS, Raspbian
-# Requires   : bash, bc
+# Requires   : bash, bc, date, uname
 # Location   : ~/bin/
 # Name       : sun
-# Version    : 1.3.0
-# Date       : 2018-01-31
+# Version    : 1.3.1
+# Date       : 2024-03-13
 # Purpose    : Calculate local sunrise, sunset times & daylight duration
 # Parameters : Any parameters provided must be in this order & format:
 #              Optional '-csv' to use comma separator (default = tab)
@@ -44,8 +43,14 @@ if [[ "$1" =~ [[:alpha:]] ]]; then
 	case $(echo "$1" | tr '[:upper:]' '[:lower:]') in
 		utrecht     ) LAT=52.094071; LON=5.103526;;
 		ouddorp     ) LAT=51.818588; LON=3.915614;;
-		papendrecht ) LAT=51.822218; LON=4.679152;;
+		baarn       ) LAT=52.209482; LON=5.285180;;
 		amstelveen  ) LAT=52.282613; LON=4.822836;;
+		schier      ) LAT=53.486833; LON=6.146565;;
+		vaals       ) LAT=50.754641; LON=6.020842;;
+		sluis       ) LAT=51.315181; LON=3.358028;;
+		delfzijl    ) LAT=53.180369; LON=7.227281;;
+		jens        ) LAT=55.536594; LON=13.209367;;
+		will        ) LAT=46.117238; LON=6.114248;;
 		*           ) echo 'Unknown location, using Utrecht.' 1>&2
 	esac
 	shift  # remove first parameter
