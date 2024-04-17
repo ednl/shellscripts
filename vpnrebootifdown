@@ -3,7 +3,7 @@
 # Reboot Linux computer with cron job if VPN cannot be activated.
 # Use together with 'vpnwatchdog'.
 #
-# Install this script on the system, for example in /usr/local/lib
+# Install this script on the system, for example in /usr/local/bin
 # and make it executable:
 #   $ sudo cp vpnrebootifdown /usr/local/bin/
 #   $ sudo chmod 755 /usr/local/bin/vpnrebootifdown
@@ -15,7 +15,7 @@
 # use its full path. For example, to check every day at 5.23am:
 #   23 5 * * * /usr/local/bin/vpnrebootifdown
 
-# Must have app, must be executable file
+# Must have companion app, must be executable file
 APP='/usr/local/bin/vpnwatchdog'
 [ -e "$APP" ] && [ -f "$APP" ] && [ -r "$APP" ] && [ -x "$APP" ] || exit 1
 

@@ -35,7 +35,7 @@
 #   $ ip a
 #   $ sudo vpnc-disconnect
 #
-# Install this script on the system, for example in /usr/local/lib
+# Install this script on the system, for example in /usr/local/bin
 # and make it executable:
 #   $ sudo cp vpnwatchdog /usr/local/bin/
 #   $ sudo chmod 755 /usr/local/bin/vpnwatchdog
